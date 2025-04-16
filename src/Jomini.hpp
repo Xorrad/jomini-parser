@@ -16,6 +16,7 @@ namespace Jomini {
         int month;
         int day;
     
+        Date() : year(0), month(0), day(0) {}
         Date(int y, int m, int d) : year(y), month(m), day(d) {}
     
         Date(const std::string& str) {
@@ -24,7 +25,7 @@ namespace Jomini {
             int n = 0;
     
             for (int i = 0; i < str.size(); i++) {
-                if(str[i] != '.') {
+                if (str[i] != '.') {
                     buffer += str[i];
                     continue;
                 }

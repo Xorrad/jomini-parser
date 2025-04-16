@@ -5,11 +5,27 @@
 #include <sstream>
 #include <memory>
 #include <map>
+#include <list>
+#include <utility>
 
 namespace Jomini {
 
+    //////////////////////////////////////////////////////////
+    //                 Forward Declarations                 //
+    //////////////////////////////////////////////////////////
+
+    struct Date;
+    struct Color;
+
+    template <typename K, typename V>
+    class OrderedMap;
+
     class Object;
     class Parser;
+
+    //////////////////////////////////////////////////////////
+    //           Custom Data Types (Date, Color...)         //
+    //////////////////////////////////////////////////////////
 
     struct Date {
         int year;
@@ -76,31 +92,160 @@ namespace Jomini {
         }
     };
 
-    enum Type {
+    //////////////////////////////////////////////////////////
+    //                     Utilities                        //
+    //////////////////////////////////////////////////////////
+
+    template <typename K, typename V>
+    class OrderedMap {
+        public:
+            OrderedMap() {}
+
+            OrderedMap(const std::map<K, V>& entries) {
+                m_Items.resize(entries.size());
+                for (auto [key, value] : entries)
+                    this->insert(key, value);
+            }
+
+            void insert(const K& key, const V& value) {
+                if (m_Index.find(key) == m_Index.end()) {
+                    m_Items.emplace_back(key, value);
+                    m_Index[key] = --m_Items.end();
+                } else {
+                    m_Index[key]->second = value;
+                }
+            }
+
+            V& at(const K& key) {
+                if (m_Index.find(key) == m_Index.end()) {
+                    throw std::out_of_range("key not found");
+                }
+                return m_Index[key]->second;
+            }
+
+            V& operator[](const K& key) {
+                if (m_Index.find(key) == m_Index.end()) {
+                    m_Items.emplace_back(key, V());
+                    m_Index[key] = --m_Items.end();
+                }
+                return m_Index[key]->second;
+            }
+
+            const V& operator[](const K& key) const {
+                static V default_value{};
+                auto it = m_Index.find(key);
+                return (it != m_Index.end()) ? it->second->second : default_value;
+            }
+
+            typename std::list<std::pair<K, V>>::iterator begin() {
+                return m_Items.begin();
+            }
+
+            typename std::list<std::pair<K, V>>::iterator end() {
+                return m_Items.end();
+            }
+
+            typename std::list<std::pair<K, V>>::const_iterator begin() const {
+                return m_Items.cbegin();
+            }
+
+            typename std::list<std::pair<K, V>>::const_iterator end() const {
+                return m_Items.cend();
+            }
+
+            std::size_t size() const {
+                return m_Items.size();
+            }
+
+            bool empty() const {
+                return m_Items.size() == 0;
+            }
+
+            void erase(const K& key) {
+                auto it = m_Index.find(key);
+                if (it != m_Index.end()) {
+                    m_Items.erase(it->second);
+                    m_Index.erase(it);
+                }
+            }
+
+            typename std::list<std::pair<K, V>>::iterator find(const K& key) {
+                auto it = m_Index.find(key);
+                return (it != m_Index.end()) ? it->second : m_Items.end();
+            }
+
+            bool contains(const K& key) const {
+                return m_Index.count(key) > 0;
+            }
+
+            std::vector<K> keys() const {
+                std::vector<K> keys;
+                for (auto [key, value] : m_Items)
+                    keys.push_back(key);
+                return keys;
+            }
+
+            void clear() {
+                m_Items.clear();
+                m_Index.clear();
+            }
+
+        private:
+            using ListIterator = typename std::list<std::pair<K, V>>::iterator;
+            std::list<std::pair<K, V>> m_Items;
+            std::map<K, ListIterator> m_Index;
+    };
+
+    //////////////////////////////////////////////////////////
+    //                  Jomini Objects                      //
+    //////////////////////////////////////////////////////////
+
+    enum class Type {
         SCALAR,
         OBJECT,
         ARRAY
     };
 
+    enum class Operator {
+        EQUAL,
+        LESS,
+        LESS_EQUAL,
+        GREATER,
+        GREATER_EQUAL,
+        NOT_EQUAL,
+        EXIST,
+    };
+
     class Object {
         public:
             Object();
-            Object(std::string scalar);
-            Object(std::map<std::string, std::shared_ptr<Object>> objects);
-            Object(std::vector<std::shared_ptr<Object>> array);
+            Object(const std::string& scalar);
+            Object(const OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& objects);
+            Object(const std::vector<std::shared_ptr<Object>>& array);
             ~Object();
 
             template <typename T> T As() const;
             template <typename T> std::vector<T> AsArray() const;
 
+            std::shared_ptr<Object> Get(const std::string& key);
+            Operator GetOperator(const std::string& key);
+
+            std::string& GetScalar();
+            OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& GetEntries();
+            std::vector<std::shared_ptr<Object>>& GetValues();
+
         private:
             union {
                 std::string m_Scalar;
-                std::map<std::string, std::shared_ptr<Object>> m_Objects;
+                OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>> m_Objects;
                 std::vector<std::shared_ptr<Object>> m_Array;
             };
             Type m_Type;
     };
+
+    //////////////////////////////////////////////////////////
+    //                      Parser                          //
+    //////////////////////////////////////////////////////////
 
     class Parser {
         public:

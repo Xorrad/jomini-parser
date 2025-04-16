@@ -4,6 +4,9 @@ MAKEFLAGS += -j4
 CXX      := g++
 CXXFLAGS := -std=c++20 -O0 -DDEBUG -g -pedantic-errors -Wall -Wno-format-security -Wno-sign-compare
 
+# Libraries
+LDFLAGS := -L/usr/lib -lbfd -ldw
+
 # Targets
 TARGET := main
 
@@ -24,7 +27,7 @@ $(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp
 $(TARGET): %: $(BIN_DIR)/%.o $(COMMON_OBJ)
 	@clear
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -o $(BIN_DIR)/$@ $^
+	$(CXX) $(CXXFLAGS) -o $(BIN_DIR)/$@ $^ $(LDFLAGS)
 	@echo "-----------------------------------------"
 	@./$(BIN_DIR)/$@
 

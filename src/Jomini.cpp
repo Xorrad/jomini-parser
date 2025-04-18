@@ -312,7 +312,6 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
                 buffer += stream.get();
             }
         }
-
         return buffer;
     };
 

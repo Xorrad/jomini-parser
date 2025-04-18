@@ -147,6 +147,6 @@ TEST_CASE("[05_scalars] scalars") {
     CHECK(object->Get("bool_true")->As<bool>());
     CHECK_FALSE(object->Get("bool_false")->As<bool>());
     CHECK(object->Get("string")->As<std::string>() == "abcdefghijklmnopqrstuvwxyz");
-    CHECK(object->Get("string_literal")->As<std::string>() == "Hello World!\n");
+    CHECK(object->Get("string_literal")->As<std::string>() == "\"Hello World!\\n\"");
     CHECK(object->Get("date")->As<Date>() == Date(2025, 1, 14));
 }

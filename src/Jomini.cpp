@@ -58,6 +58,14 @@ Object::Object(const std::shared_ptr<Object>& object)
 
 Object::~Object() {}
 
+Type Object::GetType() const {
+    return m_Type;
+}
+
+bool Object::Is(Type type) const {
+    return m_Type == type;
+}
+
 std::shared_ptr<Object> Object::Copy() const {
     if (m_Type == Type::SCALAR) {
         return std::make_shared<Object>(m_Scalar);
@@ -167,6 +175,14 @@ template <> std::vector<std::shared_ptr<Object>> Object::AsArray() const {
         throw std::runtime_error("Invalid conversion of object to array of object");
     // TODO: make a deep copy.
     return m_Array;
+}
+
+bool Object::Contains(const std::string& key) const {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Contains on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Contains on array.");
+    return m_Objects.contains(key);
 }
 
 std::shared_ptr<Object> Object::Get(const std::string& key) {

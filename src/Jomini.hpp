@@ -240,14 +240,16 @@ namespace Jomini {
             Object(const std::shared_ptr<Object>& object);
             ~Object();
 
+            Type GetType() const;
+            bool Is(Type type) const;
             std::shared_ptr<Object> Copy() const;
 
             template <typename T> T As() const;
             template <typename T> std::vector<T> AsArray() const;
 
+            bool Contains(const std::string& key) const;
             std::shared_ptr<Object> Get(const std::string& key);
             Operator GetOperator(const std::string& key);
-
             template <typename T> T Put(std::string key, T value, Operator op = Operator::EQUAL);
 
             std::string& GetScalar();

@@ -87,6 +87,7 @@ std::shared_ptr<Object> Object::Copy() const {
             array.push_back(object->Copy());
         return std::make_shared<Object>(array);
     }
+    return nullptr;
 }
 
 template <typename T> T Object::As() const {
@@ -201,12 +202,20 @@ Operator Object::GetOperator(const std::string& key) {
     return m_Objects.at(key).first;
 }
 
-template <typename T> T Object::Put(std::string key, T value, Operator op) {
+template <typename T> void Object::Put(std::string key, T value, Operator op) {
     if (m_Type == Type::SCALAR)
         throw std::runtime_error("Cannot use Put on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Put on array.");
     m_Objects.insert(key, std::make_pair(op, std::make_shared<Object>(value)));
+}
+
+template <> void Object::Put(std::string key, std::shared_ptr<Object> value, Operator op) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Put on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Put on array.");
+    m_Objects.insert(key, std::make_pair(op, value));
 }
 
 std::string& Object::GetScalar() {
@@ -336,7 +345,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             continue;
         }
 
-        // State #1: stop reading return the current main object.
+        // State #1a: stop reading return the current main object.
         //  - from: initial, state #3
         //  - next: terminal
         //  - accepts: }
@@ -432,7 +441,9 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: non-blank, non-operator
         else if (state == 3) {
             if (IS_OPERATOR(ch))
-                throw std::runtime_error("Failed to parse scalar in state #3b");
+                throw std::runtime_error("Failed to parse operator in state #3b");
+            if (IS_BRACKET(ch))
+                throw std::runtime_error("Failed to parse bracket in state #3b");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             mainObject->Put(key, std::make_shared<Object>(buffer), op);
             key = "";

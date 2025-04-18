@@ -250,7 +250,7 @@ namespace Jomini {
             bool Contains(const std::string& key) const;
             std::shared_ptr<Object> Get(const std::string& key);
             Operator GetOperator(const std::string& key);
-            template <typename T> T Put(std::string key, T value, Operator op = Operator::EQUAL);
+            template <typename T> void Put(std::string key, T value, Operator op = Operator::EQUAL);
 
             std::string& GetScalar();
             OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& GetEntries();

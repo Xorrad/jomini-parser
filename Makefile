@@ -21,11 +21,11 @@ COMMON_OBJ := $(BIN_DIR)/Jomini.o
 # Pattern rule for compiling object files
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -Ivendor -c $< -o $@
 
 # Rules for each executable
 $(TARGET): %: $(BIN_DIR)/%.o $(COMMON_OBJ)
-	@clear
+# @clear
 	@mkdir -p $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $(BIN_DIR)/$@ $^ $(LDFLAGS)
 	@echo "-----------------------------------------"

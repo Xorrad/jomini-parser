@@ -257,16 +257,14 @@ std::shared_ptr<Object> Parser::ParseString(const std::string& content) {
 }
 
 std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
-    // if it is the first call, then initialize the line number.
+    // Initialize the line number on the first function call.
     if (depth == 0)
         m_CurrentLine = 0;
 
     // Initialize the main object, key and operator.
-    // Depending on what is read, the object can be an
-    // scalar, an object (map) or an array.
-    // Key and operator are not used if it isn't parsing
-    // a map object.
-    std::shared_ptr<Object> object = std::make_shared<Object>(OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>());
+    // Depending on what is read, the object can be an scalar, an object (map) or an array.
+    // Key and operator are not used if it isn't parsing a map object.
+    std::shared_ptr<Object> mainObject = std::make_shared<Object>(OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>());
     std::string key = "";
     Operator op = Operator::EQUAL;
 
@@ -338,11 +336,20 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             continue;
         }
 
-        // State #1: parsing key.
+        // State #1: stop reading return the current main object.
+        //  - from: initial, state #3
+        //  - next: terminal
+        //  - accepts: }
+        if (state == 1 && ch == '}') {
+            if (depth == 0)
+                throw std::runtime_error("Failed to parse bracket in state #1a");
+            return mainObject;
+        }
+        // State #1b: parsing key.
         //  - from: initial, state #3
         //  - next: state #2
         //  - accepts: non-blank, non-operator, non-bracket
-        if (state == 1) {
+        else if (state == 1) {
             if (IS_OPERATOR(ch))
                 throw std::runtime_error("Failed to parse operator in state #1");
             if (IS_BRACKET(ch))
@@ -351,7 +358,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             state = 2;
         }
         // State #2a: parsing operator after #1.
-        //  - from: state #1
+        //  - from: state #1b
         //  - next: state #3
         //  - accepts: =, <, >, !, ?
         else if (state == 2 && IS_OPERATOR(ch)) {
@@ -391,7 +398,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             state = 3;
         }
         // State #2b: parsing object value after #1 and transform into an array.
-        //  - from: state #1
+        //  - from: state #1b
         //  - next: state #4
         //  - accepts: {
         else if (state == 2 && ch == '{') {
@@ -403,7 +410,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
 
         }
         // State #2c: parsing scalar value and transform into an array.
-        //  - from: state #1
+        //  - from: state #1b
         //  - next: state #4
         //  - accepts: non-blank
         else if (state == 2) {
@@ -411,24 +418,29 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         }
         // State #3a: parsing object value.
         //  - from: state #2a
+        //  - next: state #1
         //  - accepts: {
         else if (state == 3 && ch == '{') {
-
+            std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            mainObject->Put(key, object, op);
+            key = "";
+            state = 1;
         }
         // State #3b: parsing scalar value.
         //  - from: state #2a
+        //  - next: state #1
         //  - accepts: non-blank, non-operator
         else if (state == 3) {
             if (IS_OPERATOR(ch))
                 throw std::runtime_error("Failed to parse scalar in state #3b");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
-            object->Put(key, std::make_shared<Object>(buffer), op);
+            mainObject->Put(key, std::make_shared<Object>(buffer), op);
             key = "";
             state = 1;
         }
     }
 
-    return object;
+    return mainObject;
 }
 
 std::shared_ptr<Object> ParseFile(const std::string& filePath) {

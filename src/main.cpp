@@ -114,3 +114,25 @@ TEST_CASE("[03_operators] operators") {
     CHECK(object->GetOperator("not_equal") == Operator::NOT_EQUAL);
     CHECK(object->GetOperator("not_null") == Operator::NOT_NULL);
 }
+
+TEST_CASE("[04_nested_object] nested objects") {
+    std::shared_ptr<Object> object = ParseFile("tests/04_nested_objects.txt");
+
+    CHECK(object->GetType() == Type::OBJECT);
+    CHECK(object->GetEntries().size() == 1);
+
+    CHECK(object->Contains("key1"));
+    CHECK(object->Get("key1")->GetType() == Type::OBJECT);
+    CHECK(object->Get("key1")->GetEntries().size() == 2);
+    
+    CHECK(object->Get("key1")->Contains("key2"));
+    CHECK(object->Get("key1")->Get("key2")->GetType() == Type::OBJECT);
+    CHECK(object->Get("key1")->Get("key2")->GetEntries().size() == 1);
+    CHECK(object->Get("key1")->Get("key2")->Contains("key3"));
+    CHECK(object->Get("key1")->Get("key2")->Get("key3")->GetType() == Type::SCALAR);
+    CHECK(object->Get("key1")->Get("key2")->Get("key3")->As<std::string>() == "value3");
+    
+    CHECK(object->Get("key1")->Contains("key4"));
+    CHECK(object->Get("key1")->Get("key4")->GetType() == Type::SCALAR);
+    CHECK(object->Get("key1")->Get("key4")->As<std::string>() == "value4");
+}

@@ -150,3 +150,17 @@ TEST_CASE("[05_scalars] scalars") {
     CHECK(object->Get("string_literal")->As<std::string>() == "\"Hello World!\\n\"");
     CHECK(object->Get("date")->As<Date>() == Date(2025, 1, 14));
 }
+
+TEST_CASE("[06_keys] keys") {
+    std::shared_ptr<Object> object = ParseFile("tests/06_keys.txt");
+
+    CHECK(object->Get("12")->As<std::string>() == "int");
+    CHECK(object->Get("-12")->As<std::string>() == "int_negative");
+    CHECK(object->Get("12.25")->As<std::string>() == "double");
+    CHECK(object->Get("-12.25")->As<std::string>() == "double_negative");
+    CHECK(object->Get("yes")->As<std::string>() == "bool_true");
+    CHECK(object->Get("no")->As<std::string>() == "bool_false");
+    CHECK(object->Get("abcdefghijklmnopqrstuvwxyz")->As<std::string>() == "string");
+    CHECK(object->Get("\"Hello World!\\n\"")->As<std::string>() == "string_literal");
+    CHECK(object->Get("2025.1.14")->As<std::string>() == "date");
+}

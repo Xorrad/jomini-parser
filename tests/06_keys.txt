@@ -1,0 +1,9 @@
+12 = int
+-12 = int_negative
+12.25 = double
+-12.25 = double_negative
+yes = bool_true
+no = bool_false
+abcdefghijklmnopqrstuvwxyz = string
+"Hello World!\n" = string_literal
+2025.1.14 = date

@@ -1,0 +1,9 @@
+int = 12
+int_negative = -12
+double = 12.25
+double_negative = -12.25
+bool_true = yes
+bool_false = no
+string = abcdefghijklmnopqrstuvwxyz
+string_literal = "Hello World!\n"
+date = 2025.1.14

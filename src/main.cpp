@@ -136,3 +136,17 @@ TEST_CASE("[04_nested_object] nested objects") {
     CHECK(object->Get("key1")->Get("key4")->GetType() == Type::SCALAR);
     CHECK(object->Get("key1")->Get("key4")->As<std::string>() == "value4");
 }
+
+TEST_CASE("[05_scalars] scalars") {
+    std::shared_ptr<Object> object = ParseFile("tests/05_scalars.txt");
+
+    CHECK(object->Get("int")->As<int>() == 12);
+    CHECK(object->Get("int_negative")->As<int>() == -12);
+    CHECK(object->Get("double")->As<double>() == 12.25);
+    CHECK(object->Get("double_negative")->As<double>() == -12.25);
+    CHECK(object->Get("bool_true")->As<bool>());
+    CHECK_FALSE(object->Get("bool_false")->As<bool>());
+    CHECK(object->Get("string")->As<std::string>() == "abcdefghijklmnopqrstuvwxyz");
+    CHECK(object->Get("string_literal")->As<std::string>() == "Hello World!\n");
+    CHECK(object->Get("date")->As<Date>() == Date(2025, 1, 14));
+}

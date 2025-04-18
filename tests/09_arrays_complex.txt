@@ -1,0 +1,3 @@
+key1 = { culture:roman culture:breton }
+key2 = { 10 -10 10.05 -10.05 yes no value1 "Maximus Decimus Meridius" 2025.10.31 }
+key3 = { @var 100 }

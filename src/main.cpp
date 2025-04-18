@@ -75,6 +75,13 @@ void Benchmark() {
     }
 }
 
+std::string SerializeVector(const std::vector<std::string>& vec) {
+    std::string str = "{";
+    for (auto v : vec)
+        str += " " + v + " ";
+    return str + "}";
+}
+
 TEST_CASE("[01_basic] basic key-op-scalar") {
     std::shared_ptr<Object> object = ParseFile("tests/01_basic.txt");
 
@@ -174,4 +181,34 @@ TEST_CASE("[07_keys_ordering] keys ordering once parsed") {
     CHECK(object->GetEntries().keys().at(3) == "key3");
     CHECK(object->Get("key3")->GetEntries().keys().at(0) == "key2");
     CHECK(object->Get("key3")->GetEntries().keys().at(1) == "key1");
+}
+
+TEST_CASE("[08_arrays_basic] basic arrays") {
+    std::shared_ptr<Object> object = ParseFile("tests/08_arrays_basic.txt");
+
+    CHECK(object->Get("key1")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key1")->AsArray<std::string>()) == "{}");
+    CHECK(object->Get("key2")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key2")->AsArray<std::string>()) == "{ v1 }");
+    CHECK(object->Get("key3")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key3")->AsArray<std::string>()) == "{ v1 v2 }");
+    CHECK(object->Get("key4")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key4")->AsArray<std::string>()) == "{ v1 v2 v3 }");
+    CHECK(object->Get("key5")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key5")->AsArray<std::string>()) == "{ 10 }");
+    CHECK(object->Get("key6")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key6")->AsArray<std::string>()) == "{ 10 20 }");
+    CHECK(object->Get("key7")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key7")->AsArray<std::string>()) == "{ 10 20 30 }");
+}
+
+TEST_CASE("[09_arrays_complex] complex arrays") {
+    std::shared_ptr<Object> object = ParseFile("tests/09_arrays_complex.txt");
+
+    CHECK(object->Get("key1")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key1")->AsArray<std::string>()) == "{ culture:roman culture:breton }");
+    CHECK(object->Get("key2")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key2")->AsArray<std::string>()) == "{ 10 -10 10.05 -10.05 yes no value1 \"Maximus Decimus Meridius\" 2025.10.31 }");
+    CHECK(object->Get("key3")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key3")->AsArray<std::string>()) == "{ @var 100 }");
 }

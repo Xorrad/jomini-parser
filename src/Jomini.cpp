@@ -1,11 +1,31 @@
 #include "Jomini.hpp"
 
-using namespace Jomini;
+namespace Jomini {
+
+//////////////////////////////////////////////////////////
+//                  Jomini Objects                      //
+//////////////////////////////////////////////////////////
 
 Object::Object() {}
 
+Object::Object(int scalar)
+: m_Scalar(std::to_string(scalar)), m_Type(Type::SCALAR)
+{}
+
+Object::Object(double scalar)
+: m_Scalar(std::to_string(scalar)), m_Type(Type::SCALAR)
+{}
+
+Object::Object(bool scalar)
+: m_Scalar((scalar ? "yes" : "no")), m_Type(Type::SCALAR)
+{}
+
 Object::Object(const std::string& scalar)
 : m_Scalar(scalar), m_Type(Type::SCALAR)
+{}
+
+Object::Object(const Date& scalar)
+: m_Scalar((std::string) scalar), m_Type(Type::SCALAR)
 {}
 
 Object::Object(const OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& objects)
@@ -16,7 +36,50 @@ Object::Object(const std::vector<std::shared_ptr<Object>>& array)
 : m_Array(array), m_Type(Type::ARRAY)
 {}
 
+Object::Object(const Object& object) {
+    std::shared_ptr<Object> copy = object.Copy();
+    m_Type = copy->m_Type;
+    switch (m_Type) {
+        case Type::SCALAR:
+            m_Scalar = copy->m_Scalar;
+            break;
+        case Type::OBJECT:
+            m_Objects = copy->m_Objects;
+            break;
+        case Type::ARRAY:
+            m_Array = copy->m_Array;
+            break;
+    }
+}
+
+Object::Object(const std::shared_ptr<Object>& object)
+: Object(*object)
+{}
+
 Object::~Object() {}
+
+std::shared_ptr<Object> Object::Copy() const {
+    if (m_Type == Type::SCALAR) {
+        return std::make_shared<Object>(m_Scalar);
+    }
+    else if (m_Type == Type::OBJECT) {
+        // Make a deep copy of each objects in the original map.
+        OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>> objects;
+        for (auto [key, pair] : m_Objects) {
+            auto [op, value] = pair;
+            objects.insert(key, std::make_pair(op, value->Copy()));
+        }
+        return std::make_shared<Object>(objects);
+    }
+    else if (m_Type == Type::ARRAY) {
+        // Make a deep copy of each objects in the original array.
+        std::vector<std::shared_ptr<Object>> array;
+        array.reserve(m_Array.size());
+        for (auto object : m_Array)
+            array.push_back(object->Copy());
+        return std::make_shared<Object>(array);
+    }
+}
 
 template <typename T> T Object::As() const {
     if (m_Type != Type::SCALAR)
@@ -122,6 +185,14 @@ Operator Object::GetOperator(const std::string& key) {
     return m_Objects.at(key).first;
 }
 
+template <typename T> T Object::Put(std::string key, T value, Operator op) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Put on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Put on array.");
+    m_Objects.insert(key, std::make_pair(op, std::make_shared<Object>(value)));
+}
+
 std::string& Object::GetScalar() {
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetScalar on object.");
@@ -144,4 +215,219 @@ std::vector<std::shared_ptr<Object>>& Object::GetValues() {
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetValues on object.");
     return m_Array;
+}
+
+//////////////////////////////////////////////////////////
+//                      Parser                          //
+//////////////////////////////////////////////////////////
+
+Parser::Parser()
+: m_FilePath(""), m_CurrentLine(0)
+{}
+
+std::shared_ptr<Object> Parser::ParseFile(const std::string& filePath) {
+    m_FilePath = filePath;
+    std::ifstream file(filePath);
+    std::shared_ptr<Object> obj = this->Parse(file);
+    file.close();
+    return obj;
+}
+
+std::shared_ptr<Object> Parser::ParseString(const std::string& content) {
+    m_FilePath = "";
+    std::istringstream ss(content);
+    std::shared_ptr<Object> obj = this->Parse(ss);
+    return obj;
+}
+
+std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
+    // if it is the first call, then initialize the line number.
+    if (depth == 0)
+        m_CurrentLine = 0;
+
+    // Initialize the main object, key and operator.
+    // Depending on what is read, the object can be an
+    // scalar, an object (map) or an array.
+    // Key and operator are not used if it isn't parsing
+    // a map object.
+    std::shared_ptr<Object> object = std::make_shared<Object>(OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>());
+    std::string key = "";
+    Operator op = Operator::EQUAL;
+
+    #define IS_BLANK(ch) (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
+    #define IS_OPERATOR(ch) (ch == '=' || ch == '<' || ch == '>' || ch == '!' || ch == '?')
+    #define IS_BRACKET(ch) (ch == '{' || ch == '}')
+    #define IS_COMMENT(ch) (ch == '#')
+
+    // Read characters from the stream until the end of the string
+    // and capture characters into a buffer.
+    const auto CaptureTillBlank = [&](bool isStringLiteral) {
+        bool isEscaped = false;
+        std::string buffer = "";
+
+        while (stream.peek() != std::istream::traits_type::eof()) {
+            // If is a string literal:
+            // - Keep track of escaped characters.
+            // - Stop capture on unescaped quotes (included).
+            if (isStringLiteral) {
+                int ch = stream.get();
+                buffer += ch;
+                if (ch == '\\')
+                    isEscaped = true;
+                if (!isEscaped && ch == '"')
+                    break;
+                if (ch != '\\')
+                    isEscaped = false;
+            }
+            // Otherwise:
+            // - Keep capturing until first blank character
+            //   comment, operator or bracket (all excluded).
+            else if (IS_BLANK(stream.peek()) || IS_OPERATOR(stream.peek()) || IS_BRACKET(stream.peek()) || IS_COMMENT(stream.peek())) {
+                break;
+            }
+            else {
+                buffer += stream.get();
+            }
+        }
+
+        return buffer;
+    };
+
+    // Read and discard characters from the stream until a specific character (excluded).
+    const auto SkipTill = [&](char end) {
+        while (stream.peek() != std::istream::traits_type::eof()) {
+            if (stream.peek() == end)
+                return;
+            if (stream.peek() == '\n')
+                m_CurrentLine++;
+            stream.get();
+        }
+    };
+
+    // Initialize the current parsing state:
+    int state = 1;
+
+    // Loop over one character at a time, until the stream is empty.
+    while (stream.peek() != std::istream::traits_type::eof()) {
+        int ch = stream.get();
+
+        // Increment the line number for debugging.
+        if (ch == '\n')
+            m_CurrentLine++;
+
+        if (IS_BLANK(ch))
+            continue;
+        if (IS_COMMENT(ch)) {
+            SkipTill('\n');
+            continue;
+        }
+
+        // State #1: parsing key.
+        //  - from: initial, state #3
+        //  - next: state #2
+        //  - accepts: non-blank, non-operator, non-bracket
+        if (state == 1) {
+            if (IS_OPERATOR(ch))
+                throw std::runtime_error("Failed to parse operator in state #1");
+            if (IS_BRACKET(ch))
+                throw std::runtime_error("Failed to parse bracket in state #1");
+            key = std::string(1, ch) + CaptureTillBlank(ch == '"');
+            state = 2;
+        }
+        // State #2a: parsing operator after #1.
+        //  - from: state #1
+        //  - next: state #3
+        //  - accepts: =, <, >, !, ?
+        else if (state == 2 && IS_OPERATOR(ch)) {
+            if (ch == '!' && stream.peek() != '=')
+                throw std::runtime_error("Failed to parse NOT operator in state #2a");
+            if (ch == '?' && stream.peek() != '=')
+                throw std::runtime_error("Failed to parse NOT_NULL operator in state #2a");
+            switch (ch) {
+                case '=':
+                    op = Operator::EQUAL;
+                    break;
+                case '<':
+                    if (stream.peek() == '=') {
+                        stream.get();
+                        op = Operator::LESS_EQUAL;
+                        break;
+                    }
+                    op = Operator::LESS;
+                    break;
+                case '>':
+                    if (stream.peek() == '=') {
+                        stream.get();
+                        op = Operator::GREATER_EQUAL;
+                        break;
+                    }
+                    op = Operator::GREATER;
+                    break;
+                case '!':
+                    stream.get();
+                    op = Operator::NOT_EQUAL;
+                    break;
+                case '?':
+                    stream.get();
+                    op = Operator::NOT_NULL;
+                    break;
+            }
+            state = 3;
+        }
+        // State #2b: parsing object value after #1 and transform into an array.
+        //  - from: state #1
+        //  - next: state #4
+        //  - accepts: {
+        else if (state == 2 && ch == '{') {
+            throw std::runtime_error("parsing array unimplemented");
+            // if (!object->GetEntries().empty())
+            //     throw std::runtime_error("Failed to parse object in state #2b");
+            // object = std::make_shared<Object>(std::vector<std::shared_ptr<Object>>());
+            // std::shared_ptr<Object> value = Parse(stream, 1);
+
+        }
+        // State #2c: parsing scalar value and transform into an array.
+        //  - from: state #1
+        //  - next: state #4
+        //  - accepts: non-blank
+        else if (state == 2) {
+            throw std::runtime_error("parsing array unimplemented");
+        }
+        // State #3a: parsing object value.
+        //  - from: state #2a
+        //  - accepts: {
+        else if (state == 3 && ch == '{') {
+
+        }
+        // State #3b: parsing scalar value.
+        //  - from: state #2a
+        //  - accepts: non-blank, non-operator
+        else if (state == 3) {
+            if (IS_OPERATOR(ch))
+                throw std::runtime_error("Failed to parse scalar in state #3b");
+            std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
+            object->Put(key, std::make_shared<Object>(buffer), op);
+            key = "";
+            state = 1;
+        }
+    }
+
+    return object;
+}
+
+std::shared_ptr<Object> ParseFile(const std::string& filePath) {
+    Parser parser;
+    return parser.ParseFile(filePath);
+}
+
+std::shared_ptr<Object> ParseString(const std::string& content) {
+    Parser parser;
+    return parser.ParseString(content);
+}
+
+std::shared_ptr<Object> Parse(std::istream& stream) {
+    Parser parser;
+    return parser.Parse(stream);
+}
+
 }

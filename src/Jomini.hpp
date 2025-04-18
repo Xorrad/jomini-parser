@@ -7,6 +7,7 @@
 #include <map>
 #include <list>
 #include <utility>
+#include <fstream>
 
 namespace Jomini {
 
@@ -213,22 +214,41 @@ namespace Jomini {
         GREATER,
         GREATER_EQUAL,
         NOT_EQUAL,
-        EXIST,
+        NOT_NULL,
+    };
+    const std::map<Operator, std::string> OperatorsLabels = {
+        { Operator::EQUAL, "=" },
+        { Operator::LESS, "<" },
+        { Operator::LESS_EQUAL, "<=" },
+        { Operator::GREATER, ">" },
+        { Operator::GREATER_EQUAL, ">=" },
+        { Operator::NOT_EQUAL, "!=" },
+        { Operator::NOT_NULL, "?=" },
     };
 
     class Object {
         public:
             Object();
+            Object(int scalar);
+            Object(double scalar);
+            Object(bool scalar);
             Object(const std::string& scalar);
+            Object(const Date& scalar);
             Object(const OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& objects);
             Object(const std::vector<std::shared_ptr<Object>>& array);
+            Object(const Object& object);
+            Object(const std::shared_ptr<Object>& object);
             ~Object();
+
+            std::shared_ptr<Object> Copy() const;
 
             template <typename T> T As() const;
             template <typename T> std::vector<T> AsArray() const;
 
             std::shared_ptr<Object> Get(const std::string& key);
             Operator GetOperator(const std::string& key);
+
+            template <typename T> T Put(std::string key, T value, Operator op = Operator::EQUAL);
 
             std::string& GetScalar();
             OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& GetEntries();
@@ -242,7 +262,7 @@ namespace Jomini {
             };
             Type m_Type;
     };
-
+    
     //////////////////////////////////////////////////////////
     //                      Parser                          //
     //////////////////////////////////////////////////////////
@@ -251,6 +271,17 @@ namespace Jomini {
         public:
             Parser();
 
+            std::shared_ptr<Object> ParseFile(const std::string& filePath);
+            std::shared_ptr<Object> ParseString(const std::string& content);
+            std::shared_ptr<Object> Parse(std::istream& stream, int depth = 0);
+
         private:
+            std::string m_FilePath;
+            std::vector<std::string> m_Lines;
+            int m_CurrentLine;
     };
+
+    std::shared_ptr<Object> ParseFile(const std::string& filePath);
+    std::shared_ptr<Object> ParseString(const std::string& content);
+    std::shared_ptr<Object> Parse(std::istream& stream);
 }

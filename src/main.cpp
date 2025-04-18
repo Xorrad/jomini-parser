@@ -8,7 +8,7 @@ using namespace Jomini;
 
 SignalHandler signalHandler;
 
-int main() {
+void TestConstructors() {
     // Scalar
     std::shared_ptr<Object> o = std::make_shared<Object>("test");
     std::cout << o->As<std::string>() << std::endl << std::endl;
@@ -36,6 +36,19 @@ int main() {
     std::cout << std::endl;
 
     std::cout << "test" << " = " << o2->Get("test")->As<std::string>() << std::endl;
+}
+
+void TestInlineParsing() {
+    std::string content = "keéy ?= value";
+    std::shared_ptr<Object> object = ParseString(content);
+
+    for (auto [key, pair] : object->GetEntries())
+        std::cout << key << " " << OperatorsLabels.at(pair.first) << " " << pair.second->As<std::string>() << std::endl;
+    std::cout << std::endl;
+}
+
+int main() {
+    TestInlineParsing();
 
     return 0;
 }

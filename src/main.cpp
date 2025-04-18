@@ -18,8 +18,8 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-TEST_CASE("[general] basic key-scalar") {
-    std::shared_ptr<Object> object = ParseFile("tests/general_basic.txt");
+TEST_CASE("[01_basic] basic key-op-scalar") {
+    std::shared_ptr<Object> object = ParseFile("tests/01_basic.txt");
 
     CHECK(object->GetType() == Type::OBJECT);
     CHECK(object->GetEntries().size() == 1);
@@ -30,8 +30,22 @@ TEST_CASE("[general] basic key-scalar") {
     CHECK(object->GetOperator("key") == Operator::EQUAL);
 }
 
-TEST_CASE("[general] operators") {
-    std::shared_ptr<Object> object = ParseFile("tests/general_operators.txt");
+TEST_CASE("[02_basic_multi] multilines key-op-scalar") {
+    std::shared_ptr<Object> object = ParseFile("tests/02_basic_multi.txt");
+
+    CHECK(object->GetType() == Type::OBJECT);
+    CHECK(object->GetEntries().size() == 4);
+
+    for (int i = 1; i < 5; i++) {
+        std::string key = "key" + std::to_string(i);
+        CHECK(object->Contains(key));
+        CHECK(object->Get(key)->As<std::string>() == "value" + std::to_string(i));
+        CHECK(object->GetOperator(key) == Operator::EQUAL);
+    }
+}
+
+TEST_CASE("[03_operators] operators") {
+    std::shared_ptr<Object> object = ParseFile("tests/03_operators.txt");
 
     CHECK(object->GetType() == Type::OBJECT);
     CHECK(object->GetEntries().size() == 7);

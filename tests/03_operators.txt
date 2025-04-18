@@ -1,0 +1,7 @@
+equal = 0
+less < 0
+less_equal <= 0
+greater > 0
+greater_equal >= 0
+not_equal != 0
+not_null ?= 0

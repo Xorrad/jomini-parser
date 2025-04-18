@@ -164,3 +164,14 @@ TEST_CASE("[06_keys] keys") {
     CHECK(object->Get("\"Hello World!\\n\"")->As<std::string>() == "string_literal");
     CHECK(object->Get("2025.1.14")->As<std::string>() == "date");
 }
+
+TEST_CASE("[07_keys_ordering] keys ordering once parsed") {
+    std::shared_ptr<Object> object = ParseFile("tests/07_keys_ordering.txt");
+
+    CHECK(object->GetEntries().keys().at(0) == "key1");
+    CHECK(object->GetEntries().keys().at(1) == "key2");
+    CHECK(object->GetEntries().keys().at(2) == "key0");
+    CHECK(object->GetEntries().keys().at(3) == "key3");
+    CHECK(object->Get("key3")->GetEntries().keys().at(0) == "key2");
+    CHECK(object->Get("key3")->GetEntries().keys().at(1) == "key1");
+}

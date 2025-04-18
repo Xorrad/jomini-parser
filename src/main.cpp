@@ -1,5 +1,6 @@
 #include <iostream>
-#include <vector>
+#include <chrono>
+#include <iomanip>
 
 #include "Jomini.hpp"
 using namespace Jomini;
@@ -11,11 +12,67 @@ SignalHandler signalHandler;
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.hpp"
 
+// Function to test the parser manually.
+void ManualTests();
+
+// Function to measure reading and parsing speed.
+void Benchmark();
+
 int main(int argc, char** argv) {
     doctest::Context context(argc, argv);
     context.run();
 
+    // ManualTests();
+    Benchmark();
+
     return 0;
+}
+
+void ManualTests() {
+
+}
+
+void Benchmark() {
+    struct BenchmarkResult {
+        std::string filePath;
+        std::chrono::duration<double, std::milli> duration;
+        double entries;
+    };
+
+    const auto BenchmarkFile = [](const std::string& filePath, uint iterations) {
+        BenchmarkResult result = {
+            filePath,
+            std::chrono::duration<double, std::milli>::zero(),
+            0 
+        };
+
+        for (int i = 0; i < iterations; i++) {
+            auto start = std::chrono::high_resolution_clock::now();
+            std::shared_ptr<Object> data = ParseFile(filePath);
+            auto end = std::chrono::high_resolution_clock::now();
+            result.duration += end - start;
+            result.entries += data->GetEntries().size();
+        }
+
+        result.filePath = filePath;
+        result.duration /= iterations;
+        result.entries /= iterations;
+        return result;
+    };
+
+    std::cout << "Starting benchmarks..." << std::endl;
+    
+    std::vector<BenchmarkResult> results;
+    results.push_back(BenchmarkFile("tests/00_benchmark_10KB.txt", 10));
+    results.push_back(BenchmarkFile("tests/00_benchmark_100KB.txt", 5));
+    results.push_back(BenchmarkFile("tests/00_benchmark_1MB.txt", 5));
+
+    std::cout << std::left << std::setw(30) << "file path" << std::right << std::setw(15) << "avg time" << std::setw(15) << "avg entries" << std::endl;
+    std::cout << "------------------------------------------------------------" << std::endl;
+    
+    for (auto result : results) {
+        std::cout << std::left << std::setw(30) << result.filePath << std::right << std::setw(15) << (std::to_string(result.duration.count()) + "ms") << std::setw(15) << result.entries << std::endl;
+    }
 }
 
 TEST_CASE("[01_basic] basic key-op-scalar") {

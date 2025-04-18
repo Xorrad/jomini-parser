@@ -37,31 +37,34 @@ namespace Jomini {
         Date(int y, int m, int d) : year(y), month(m), day(d) {}
     
         Date(const std::string& str) {
-            std::string buffer = "";
-            int parts[3];
-            int n = 0;
-    
-            for (int i = 0; i < str.size(); i++) {
-                if (str[i] != '.') {
-                    buffer += str[i];
-                    continue;
-                }
-                if (n >= 3)
-                    throw std::invalid_argument("Invalid date format.");
-                try {
-                    parts[n++] = std::stoi(buffer);
-                }
-                catch (std::exception& e) {
-                    throw std::invalid_argument("Invalid date number format.");
-                }
-            }
-    
-            if (n != 3)
+            size_t dot1 = str.find('.');
+            if (dot1 == std::string::npos || dot1 == 0)
                 throw std::invalid_argument("Invalid date format.");
-        
-            year = parts[0];
-            month = parts[1];
-            day = parts[2];
+
+            size_t dot2 = str.find('.', dot1 + 1);
+            if (dot2 == std::string::npos || dot2 == dot1 + 1 || dot2 == str.length() - 1)
+                throw std::invalid_argument("Invalid date format.");
+
+            try {
+                year = std::stoi(str.substr(0, dot1));
+            }
+            catch (std::exception& e) {
+                throw std::invalid_argument("Invalid year number format.");
+            }
+
+            try {
+                month = std::stoi(str.substr(dot1 + 1, dot2 - dot1));
+            }
+            catch (std::exception& e) {
+                throw std::invalid_argument("Invalid month number format.");
+            }
+            
+            try {
+                day = std::stoi(str.substr(dot2 + 1, str.length() - dot2));
+            }
+            catch (std::exception& e) {
+                throw std::invalid_argument("Invalid day number format.");
+            }
         }
     
         operator std::string() const {

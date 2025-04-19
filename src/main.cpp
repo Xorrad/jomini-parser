@@ -349,3 +349,14 @@ TEST_CASE("[15_exceptions_missing_operator] operator missing after key") {
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/15_exceptions_missing_operator.txt:0:3: error: expected an operator after 'key'\n\t0 | key\n\t  |    ^\n\t  |    |\n\t  |    missing operator");
     }
 }
+
+TEST_CASE("[16_exceptions_unmatched_closing_bracket] unexpected closing bracket after value") {
+    CHECK_THROWS_AS(ParseFile("tests/16_exceptions_unmatched_closing_bracket.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/16_exceptions_unmatched_closing_bracket.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unmatched_closing_bracket.txt:0:12: error: unexpected closing brace '}'\n\t0 | key = value }\n\t  |             ^\n\t  |             |\n\t  |             unmatched closing brace");
+    }
+}

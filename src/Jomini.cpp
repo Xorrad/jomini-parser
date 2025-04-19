@@ -411,7 +411,7 @@ Parser::Parser()
 : m_FilePath(""), m_CurrentLine(0), m_CurrentCursor(0)
 {}
 
-void Parser::ThrowError(const std::string& error, const std::string& cursorError, std::string sourceFile, int sourceFileLine) {
+void Parser::ThrowError(const std::string& error, const std::string& cursorError, int cursorOffset, std::string sourceFile, int sourceFileLine) {
     std::vector<std::string> lines = this->GetFileLines();
 
     std::string message = std::format(
@@ -424,12 +424,12 @@ void Parser::ThrowError(const std::string& error, const std::string& cursorError
         "{}:{}:{}: error: {}\n",
         m_FilePath,
         m_CurrentLine,
-        m_CurrentCursor,
+        std::max(0, m_CurrentCursor+cursorOffset),
         error
     );
 
     std::string tab1 = std::string(std::to_string(m_CurrentLine).length(), ' ');
-    std::string tab2 = std::string(m_CurrentCursor, ' ');
+    std::string tab2 = std::string(std::max(0, m_CurrentCursor+cursorOffset), ' ');
     message += std::format(
         "\t{} | {}\n"
         "\t{} | {}^\n"
@@ -565,7 +565,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: }
         if (state == 1 && ch == '}') {
             if (depth == 0)
-                throw std::runtime_error("Failed to parse bracket in state #1a");
+                THROW_ERROR("unexpected closing brace '}'", "unmatched closing brace", -1);
             return mainObject;
         }
         // State #1b: parsing object in array.
@@ -770,9 +770,9 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
     }
 
     if (!key.empty() && state == 3)
-        THROW_ERROR(std::format("expected a value after '{}'", OperatorsLabels.at(op)), "missing value");
+        THROW_ERROR(std::format("expected a value after '{}'", OperatorsLabels.at(op)), "missing value", 0);
     if (!key.empty() && state == 2)
-        THROW_ERROR(std::format("expected an operator after '{}'", key), "missing operator");
+        THROW_ERROR(std::format("expected an operator after '{}'", key), "missing operator", 0);
 
     return mainObject;
 }

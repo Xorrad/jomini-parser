@@ -309,13 +309,13 @@ namespace Jomini {
     //                      Parser                          //
     //////////////////////////////////////////////////////////
 
-    #define THROW_ERROR(error, cursorError) this->ThrowError(error, cursorError, __FILE__, __LINE__);
+    #define THROW_ERROR(error, cursorError, cursorOffset) this->ThrowError(error, cursorError, cursorOffset, __FILE__, __LINE__);
 
     class Parser {
         public:
             Parser();
 
-            void ThrowError(const std::string& error, const std::string& cursorError, std::string sourceFile, int sourceFileLine);
+            void ThrowError(const std::string& error, const std::string& cursorError, int cursorOffset, std::string sourceFile, int sourceFileLine);
             std::vector<std::string> GetFileLines() const;
 
             std::shared_ptr<Object> ParseFile(const std::string& filePath);

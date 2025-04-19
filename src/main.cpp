@@ -210,3 +210,16 @@ TEST_CASE("[09_arrays_complex] complex arrays") {
     CHECK(object->Get("key3")->GetType() == Type::ARRAY);
     CHECK(SerializeVector(object->Get("key3")->AsArray<std::string>()) == "{ @var 100 }");
 }
+
+TEST_CASE("[10_comments] comments") {
+    std::shared_ptr<Object> object = ParseFile("tests/10_comments.txt");
+
+    CHECK(object->Get("key1")->GetType() == Type::SCALAR);
+    CHECK(object->Get("key1")->As<std::string>() == "value1");
+    CHECK(object->Get("key2")->GetType() == Type::SCALAR);
+    CHECK(object->Get("key2")->As<std::string>() == "value2");
+    CHECK(object->Get("key3")->GetType() == Type::OBJECT);
+    CHECK(object->Get("key3")->GetMap().empty());
+    CHECK(object->Get("key4")->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(object->Get("key4")->AsArray<std::string>()) == "{ v1 v2 }");
+}

@@ -1,0 +1,11 @@
+key1 = value1 # a comment
+key2 = value2# a comment
+# another
+# again...
+key3 = { # here too 
+    # and here
+}
+key4 = {
+    v1 # and here
+    v2#and here
+}

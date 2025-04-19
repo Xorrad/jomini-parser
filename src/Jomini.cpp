@@ -223,6 +223,24 @@ template <> Date Object::As() const {
     }
 }
 
+template <typename T> std::optional<T> Object::AsOpt() const {
+    try {
+        T value = this->As<T>();
+        return value;
+    }
+    catch (std::exception& e) {}
+    return std::nullopt;
+}
+
+template <typename T> T Object::As(const T& defaultValue) const {
+    try {
+        T value = this->As<T>();
+        return value;
+    }
+    catch (std::exception& e) {}
+    return defaultValue;
+}
+
 template <typename T> std::vector<T> Object::AsArray() const {
     if (m_Type != Type::ARRAY)
         throw std::runtime_error("Invalid conversion of object to array of " + std::string(typeid(T).name()));
@@ -249,6 +267,24 @@ template <> std::vector<std::shared_ptr<Object>> Object::AsArray() const {
     if (m_Type != Type::ARRAY)
         throw std::runtime_error("Invalid conversion of object to array of object");
     return this->Copy()->GetArray();
+}
+
+template <typename T> std::optional<std::vector<T>> Object::AsArrayOpt() const {
+    try {
+        T value = this->AsArray<T>();
+        return value;
+    }
+    catch (std::exception& e) {}
+    return std::nullopt;
+}
+
+template <typename T> std::vector<T> Object::AsArray(const T& defaultValue) const {
+    try {
+        T value = this->AsArray<T>();
+        return value;
+    }
+    catch (std::exception& e) {}
+    return defaultValue;
 }
 
 bool Object::Contains(const std::string& key) const {

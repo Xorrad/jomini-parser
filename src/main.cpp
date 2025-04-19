@@ -72,6 +72,7 @@ void Benchmark() {
     results.push_back(BenchmarkFile("tests/00_benchmark_10KB.txt", 10));
     results.push_back(BenchmarkFile("tests/00_benchmark_100KB.txt", 5));
     results.push_back(BenchmarkFile("tests/00_benchmark_1MB.txt", 5));
+    results.push_back(BenchmarkFile("tests/00_tests.txt", 1));
 
     std::cout << std::left << std::setw(30) << "file path" << std::right << std::setw(15) << "avg time" << std::setw(15) << "avg entries" << std::endl;
     std::cout << "------------------------------------------------------------" << std::endl;

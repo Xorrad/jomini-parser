@@ -9,6 +9,7 @@
 #include <utility>
 #include <fstream>
 #include <variant>
+#include <optional>
 
 namespace Jomini {
 
@@ -277,7 +278,12 @@ namespace Jomini {
             void ConvertToObject();
 
             template <typename T> T As() const;
+            template <typename T> std::optional<T> AsOpt() const;
+            template <typename T> T As(const T& defaultValue) const;
+
             template <typename T> std::vector<T> AsArray() const;
+            template <typename T> std::optional<std::vector<T>> AsArrayOpt() const;
+            template <typename T> std::vector<T> AsArray(const T& defaultValue) const;
 
             bool Contains(const std::string& key) const;
             std::shared_ptr<Object> Get(const std::string& key);

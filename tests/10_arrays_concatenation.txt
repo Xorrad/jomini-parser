@@ -1,0 +1,4 @@
+trait = education_stewardship_4
+trait = patient
+trait = zealous
+trait = diligent

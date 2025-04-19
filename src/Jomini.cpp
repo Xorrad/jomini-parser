@@ -94,13 +94,16 @@ void Object::ConvertToArray() {
         m_Value = ObjectArray{std::make_shared<Object>(m_Value)};
         m_Type = Type::ARRAY;
     }
-    // If it is an empty object, then turn it into an array.
-    // Otherwise, raise an exception.
+    // If it is an object, then turn it into an array with the former object as the only value.
     else if (m_Type == Type::OBJECT) {
-        if (!std::get<ObjectMap>(m_Value).empty())
-            throw std::runtime_error("Invalid conversion of non-empty object to array.");
+        std::shared_ptr<Object> formerObject = std::make_shared<Object>(m_Value);
+            
         m_Value = ObjectArray{};
         m_Type = Type::ARRAY;
+
+        // If the former object was not empty, then add it to the array.
+        if (!formerObject->GetMap().empty())
+            std::get<ObjectArray>(m_Value).push_back(formerObject);
     }
 }
 
@@ -233,22 +236,6 @@ Operator Object::GetOperator(const std::string& key) {
     return std::get<ObjectMap>(m_Value).at(key).first;
 }
 
-template <typename T> void Object::Put(std::string key, T value, Operator op) {
-    if (m_Type == Type::SCALAR)
-        throw std::runtime_error("Cannot use Put on scalar.");
-    if (m_Type == Type::ARRAY)
-        throw std::runtime_error("Cannot use Put on array.");
-    std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, std::make_shared<Object>(value)));
-}
-
-template <> void Object::Put(std::string key, std::shared_ptr<Object> value, Operator op) {
-    if (m_Type == Type::SCALAR)
-        throw std::runtime_error("Cannot use Put on scalar.");
-    if (m_Type == Type::ARRAY)
-        throw std::runtime_error("Cannot use Put on array.");
-    std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, value));
-}
-
 template <typename T> void Object::Push(T value, bool convertToArray) {
     if (m_Type != Type::ARRAY) {
         if (!convertToArray)
@@ -265,6 +252,50 @@ template <> void Object::Push(std::shared_ptr<Object> value, bool convertToArray
         this->ConvertToArray();
     }
     std::get<ObjectArray>(m_Value).push_back(value);
+}
+
+template <typename T> void Object::Put(std::string key, T value, Operator op) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Put on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Put on array.");
+    std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, std::make_shared<Object>(value)));
+}
+
+template <> void Object::Put(std::string key, std::shared_ptr<Object> value, Operator op) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Put on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Put on array.");
+    std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, value));
+}
+
+template <typename T> void Object::Merge(std::string key, T value, Operator op) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Merge on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Merge on array.");
+    ObjectMap& map = std::get<ObjectMap>(m_Value);
+    if (map.contains(key)) {
+        map.at(key).second->Push(std::make_shared<Object>(value), true);
+    }
+    else {
+        map.insert(key, std::make_pair(op, std::make_shared<Object>(value)));
+    }
+}
+
+template <> void Object::Merge(std::string key, std::shared_ptr<Object> value, Operator op) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Merge on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Merge on array.");
+    ObjectMap& map = std::get<ObjectMap>(m_Value);
+    if (map.contains(key)) {
+        map.at(key).second->Push(value, true);
+    }
+    else {
+        map.insert(key, std::make_pair(op, value));
+    }
 }
 
 std::string& Object::GetString() {
@@ -510,7 +541,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: {
         else if (state == 3 && ch == '{') {
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
-            mainObject->Put(key, object, op);
+            mainObject->Merge(key, object, op);
             key = "";
             state = 1;
         }
@@ -524,7 +555,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             if (IS_BRACKET(ch))
                 throw std::runtime_error("Failed to parse bracket in state #3b");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
-            mainObject->Put(key, std::make_shared<Object>(buffer), op);
+            mainObject->Merge(key, std::make_shared<Object>(buffer), op);
             key = "";
             state = 1;
         }

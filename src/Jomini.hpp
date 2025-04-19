@@ -263,9 +263,11 @@ namespace Jomini {
             bool Contains(const std::string& key) const;
             std::shared_ptr<Object> Get(const std::string& key);
             Operator GetOperator(const std::string& key);
-            template <typename T> void Put(std::string key, T value, Operator op = Operator::EQUAL);
-
+            
             template <typename T> void Push(T value, bool convertToArray = false);
+            
+            template <typename T> void Put(std::string key, T value, Operator op = Operator::EQUAL);
+            template <typename T> void Merge(std::string key, T value, Operator op = Operator::EQUAL);
 
             std::string& GetString();
             ObjectMap& GetMap();

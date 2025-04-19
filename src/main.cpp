@@ -245,8 +245,16 @@ TEST_CASE("[09_arrays_complex] complex arrays") {
     CHECK(object->Get("key7")->GetArray().at(1)->Get("name")->As<std::string>() == "\"Vespasian\"");
 }
 
-TEST_CASE("[10_comments] comments") {
-    std::shared_ptr<Object> object = ParseFile("tests/10_comments.txt");
+TEST_CASE("[10_arrays_concatenation] concatenation of arrays") {
+    std::shared_ptr<Object> object = ParseFile("tests/10_arrays_concatenation.txt");
+
+    CHECK(object->Get("trait")->GetType() == Type::ARRAY);
+    CHECK(object->Get("trait")->GetArray().size() == 4);
+    CHECK(SerializeVector(object->Get("trait")->AsArray<std::string>()) == "{ education_stewardship_4 patient zealous diligent }");
+}
+
+TEST_CASE("[11_comments] comments") {
+    std::shared_ptr<Object> object = ParseFile("tests/11_comments.txt");
 
     CHECK(object->Get("key1")->GetType() == Type::SCALAR);
     CHECK(object->Get("key1")->As<std::string>() == "value1");
@@ -258,8 +266,8 @@ TEST_CASE("[10_comments] comments") {
     CHECK(SerializeVector(object->Get("key4")->AsArray<std::string>()) == "{ v1 v2 }");
 }
 
-TEST_CASE("[11_utf8] utf8 characters") {
-    std::shared_ptr<Object> object = ParseFile("tests/11_utf8.txt");
+TEST_CASE("[12_utf8] utf8 characters") {
+    std::shared_ptr<Object> object = ParseFile("tests/12_utf8.txt");
 
     CHECK(object->Get("latin1")->GetType() == Type::SCALAR);
     CHECK(object->Get("latin1")->As<std::string>() == "éàâêëïîôöäüûù");

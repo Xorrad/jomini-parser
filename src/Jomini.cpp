@@ -408,8 +408,52 @@ ObjectArray& Object::GetArray() {
 //////////////////////////////////////////////////////////
 
 Parser::Parser()
-: m_FilePath(""), m_CurrentLine(0)
+: m_FilePath(""), m_CurrentLine(0), m_CurrentCursor(0)
 {}
+
+void Parser::ThrowError(const std::string& error, const std::string& cursorError, std::string sourceFile, int sourceFileLine) {
+    std::vector<std::string> lines = this->GetFileLines();
+
+    std::string message = std::format(
+        "{}:{}: an exception has been raised.\n",
+        sourceFile,
+        sourceFileLine
+    );
+
+    message += std::format(
+        "{}:{}:{}: error: {}\n",
+        m_FilePath,
+        m_CurrentLine,
+        m_CurrentCursor,
+        error
+    );
+
+    std::string tab1 = std::string(std::to_string(m_CurrentLine).length(), ' ');
+    std::string tab2 = std::string(m_CurrentCursor, ' ');
+    message += std::format(
+        "\t{} | {}\n"
+        "\t{} | {}^\n"
+        "\t{} | {}|\n"
+        "\t{} | {}{}",
+        m_CurrentLine, lines.at(m_CurrentLine),
+        tab1, tab2,
+        tab1, tab2,
+        tab1, tab2, cursorError
+    );
+
+    throw std::runtime_error(message);
+}
+
+std::vector<std::string> Parser::GetFileLines() const {
+    std::vector<std::string> lines;
+    std::ifstream file(m_FilePath);
+    if(!file.is_open())
+        return lines;
+    std::string line;
+    while (std::getline(file, line))
+        lines.push_back(line);
+    return lines;
+}
 
 std::shared_ptr<Object> Parser::ParseFile(const std::string& filePath) {
     m_FilePath = filePath;
@@ -428,8 +472,10 @@ std::shared_ptr<Object> Parser::ParseString(const std::string& content) {
 
 std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
     // Initialize the line number on the first function call.
-    if (depth == 0)
+    if (depth == 0) {
         m_CurrentLine = 0;
+        m_CurrentCursor = 0;
+    }
 
     // Initialize the main object, key and operator.
     // Depending on what is read, the object can be an scalar, an object (map) or an array.
@@ -457,6 +503,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             if (isStringLiteral) {
                 int ch = stream.get();
                 buffer += ch;
+                m_CurrentCursor++;
                 if (ch == '\\')
                     isEscaped = true;
                 if (!isEscaped && ch == '"')
@@ -472,6 +519,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             }
             else {
                 buffer += stream.get();
+                m_CurrentCursor++;
             }
         }
         return buffer;
@@ -482,8 +530,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         while (stream.peek() != std::istream::traits_type::eof()) {
             if (stream.peek() == end)
                 return;
-            if (stream.peek() == '\n')
+            if (stream.peek() == '\n') {
                 m_CurrentLine++;
+                m_CurrentCursor = 0;
+            }
             stream.get();
         }
     };
@@ -494,10 +544,13 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
     // Loop over one character at a time, until the stream is empty.
     while (stream.peek() != std::istream::traits_type::eof()) {
         int ch = stream.get();
+        m_CurrentCursor++;
 
         // Increment the line number for debugging.
-        if (ch == '\n')
+        if (ch == '\n') {
             m_CurrentLine++;
+            m_CurrentCursor = 0;
+        }
 
         if (IS_BLANK(ch))
             continue;
@@ -555,6 +608,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
                 case '<':
                     if (stream.peek() == '=') {
                         stream.get();
+                        m_CurrentCursor++;
                         op = Operator::LESS_EQUAL;
                         break;
                     }
@@ -563,6 +617,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
                 case '>':
                     if (stream.peek() == '=') {
                         stream.get();
+                        m_CurrentCursor++;
                         op = Operator::GREATER_EQUAL;
                         break;
                     }
@@ -570,10 +625,12 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
                     break;
                 case '!':
                     stream.get();
+                    m_CurrentCursor++;
                     op = Operator::NOT_EQUAL;
                     break;
                 case '?':
                     stream.get();
+                    m_CurrentCursor++;
                     op = Operator::NOT_NULL;
                     break;
             }
@@ -629,7 +686,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             if (object->Is(Type::OBJECT) && ((bool) (flags & (Flags::LIST | Flags::RANGE))))
                 object->ConvertToArray();
 
-            // Convert a range to an array.
+            // Convert range to an array.
             if ((bool) (flags & Flags::RANGE)) {
                 if (!object->Is(Type::ARRAY))
                     throw std::runtime_error("Failed to parse range in state #3a");
@@ -711,6 +768,11 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             state = 4;
         }
     }
+
+    if (!key.empty() && state == 3)
+        THROW_ERROR(std::format("expected a value after '{}'", OperatorsLabels.at(op)), "missing value");
+    if (!key.empty() && state == 2)
+        THROW_ERROR(std::format("expected an operator after '{}'", key), "missing operator");
 
     return mainObject;
 }

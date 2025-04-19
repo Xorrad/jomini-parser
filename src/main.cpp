@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <iomanip>
+#include <regex>
 
 #include "Jomini.hpp"
 using namespace Jomini;
@@ -325,4 +326,26 @@ TEST_CASE("[13_utf8] utf8 characters") {
     CHECK(object->Get("chinese2")->As<std::string>() == "眼泪");
     CHECK(object->Get("眼泪")->GetType() == Type::SCALAR);
     CHECK(object->Get("眼泪")->As<std::string>() == "chinese3");
+}
+
+TEST_CASE("[14_exceptions_missing_value] value missing after key and operator") {
+    CHECK_THROWS_AS(ParseFile("tests/14_exceptions_missing_value.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/14_exceptions_missing_value.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/14_exceptions_missing_value.txt:0:5: error: expected a value after '='\n\t0 | key =\n\t  |      ^\n\t  |      |\n\t  |      missing value");
+    }
+}
+
+TEST_CASE("[15_exceptions_missing_operator] operator missing after key") {
+    CHECK_THROWS_AS(ParseFile("tests/15_exceptions_missing_operator.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/15_exceptions_missing_operator.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/15_exceptions_missing_operator.txt:0:3: error: expected an operator after 'key'\n\t0 | key\n\t  |    ^\n\t  |    |\n\t  |    missing operator");
+    }
 }

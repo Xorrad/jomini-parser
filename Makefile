@@ -1,7 +1,7 @@
 MAKEFLAGS += -j4
 
 # Compiler flags
-CXX      := g++
+CXX      := g++-13
 CXXFLAGS := -std=c++20 -O0 -DDEBUG -g -pedantic-errors -Wall -Wno-format-security -Wno-sign-compare
 
 # Libraries

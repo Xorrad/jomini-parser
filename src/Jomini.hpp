@@ -10,6 +10,7 @@
 #include <fstream>
 #include <variant>
 #include <optional>
+#include <format>
 
 namespace Jomini {
 
@@ -308,9 +309,14 @@ namespace Jomini {
     //                      Parser                          //
     //////////////////////////////////////////////////////////
 
+    #define THROW_ERROR(error, cursorError) this->ThrowError(error, cursorError, __FILE__, __LINE__);
+
     class Parser {
         public:
             Parser();
+
+            void ThrowError(const std::string& error, const std::string& cursorError, std::string sourceFile, int sourceFileLine);
+            std::vector<std::string> GetFileLines() const;
 
             std::shared_ptr<Object> ParseFile(const std::string& filePath);
             std::shared_ptr<Object> ParseString(const std::string& content);
@@ -318,8 +324,8 @@ namespace Jomini {
 
         private:
             std::string m_FilePath;
-            std::vector<std::string> m_Lines;
             int m_CurrentLine;
+            int m_CurrentCursor;
     };
 
     std::shared_ptr<Object> ParseFile(const std::string& filePath);

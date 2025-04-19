@@ -1,0 +1,818 @@
+k_disputed_lands = {
+	7800.1.1 = {
+		effect = {
+			change_development_level = 9
+		}
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion
+		holder = Blackfyre_14 #Maelys the Monstrous
+	}
+	8258.12.22 = {
+		holder = 0
+	}
+}
+
+d_the_shambles = {
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Nine_Eyes_1 #Nine-Eyes
+	}
+	8258.12.22 = {
+		holder = 0
+	}
+}
+
+c_qorena = {
+	8000.1.1 = {
+		holder = plc_1
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Nine_Eyes_1 #Nine-Eyes
+	}
+	8258.12.22 = {
+		holder = starter_plc_1
+	}
+}
+c_vysos_plains = {
+	8000.1.1 = {
+		holder = plc_2
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Nine_Eyes_1 #Nine-Eyes
+	}
+	8258.12.22 = {
+		holder = starter_plc_2
+	}
+}
+c_pearridge = {
+	7800.1.1 = {
+		liege = k_tyrosh
+	}
+	7819.1.1 = {
+		holder = Jayn_21 # Kasporio
+	}
+	7822.1.1 = {
+		holder = Jayn_20 # Rhogarro
+	}
+	7861.1.1 = {
+		holder = Jayn_18 # Kasporio
+	}
+	7916.1.1 = {
+		holder = Jayn_17 # Manto
+	}
+	7944.1.1 = {
+		holder = Jayn_16 # Collo
+	}
+	7962.1.1 = {
+		holder = Jayn_15 # Racallio
+	}
+	7984.1.1 = {
+		holder = Jayn_13 # Visario
+	}
+	8021.1.1 = {
+		holder = Jayn_12 # Alanno
+	}
+	8046.1.1 = {
+		holder = Jayn_11 # Rhogarro
+	}
+	8077.1.1 = {
+		holder = Jayn_10 # Fodio
+	}
+	8094.1.1 = {
+		holder = Jayn_9 # Amarro
+	}
+	8112.1.1 = {
+		holder = Jayn_8 # Bosqo
+	}
+	8136.1.1 = {
+		holder = Jayn_7 # Seqqo
+	}
+	8140.1.1 = {
+		holder = Jayn_6 # Clario
+	}
+	8189.1.1 = {
+		holder = Jayn_4 # Aro
+	}
+	8224.1.1 = {
+		holder = Jayn_3 # Ollo
+	}
+	8253.1.1 = {
+		holder = Jayn_2 # Nisario
+	}
+	8279.1.1 = {
+		holder = Jayn_1 # Mardono
+	}
+}
+c_ysilios = {
+	8000.1.1 = {
+		holder = plc_3
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Adarys_1
+	}
+	8258.12.22 = {
+		liege = 0
+	}
+	8259.1.1 = {
+		holder = Gaembutys_1 # Ravelo
+	}
+}
+c_the_spar = {
+	8000.1.1 = {
+		holder = plc_4
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Nine_Eyes_1 #Nine-Eyes
+	}
+	8258.12.22 = {
+		liege = 0
+	}
+	8266.1.1 = {
+		holder = starter_plc_4
+	}
+}
+d_battle_hills = {
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Fossoway_58 #Derrick the Bad Apple
+	}
+	8258.12.22 = {
+		holder = 0
+	}
+}
+c_kios = {
+	8000.1.1 = {
+		holder = plc_5
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Fossoway_58 #Derrick the Bad Apple
+	}
+	8258.12.22 = {
+		holder = starter_plc_5
+	}
+}
+c_broken_lance = {
+	8000.1.1 = {
+		holder = plc_6
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Fossoway_58 #Derrick the Bad Apple
+	}
+	8258.12.22 = {
+		holder = starter_plc_6
+	}
+}
+c_staherys = {
+	8000.1.1 = {
+		holder = plc_7
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Fossoway_58 #Derrick the Bad Apple
+	}
+	8258.12.22 = {
+		holder = starter_plc_7
+	}
+}
+c_coin_hoard = {
+	8000.1.1 = {
+		government = free_city_government
+		holder = plc_8
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Fossoway_58 #Derrick the Bad Apple
+	}
+	8258.12.22 = {
+		holder = starter_plc_8
+	}
+}
+c_sellswords_perch = {
+	8000.1.1 = {
+		holder = plc_9
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Fossoway_58 #Derrick the Bad Apple
+	}
+	8258.12.22 = {
+		holder = starter_plc_9
+	}
+}
+d_hells_barrens = {
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion
+		holder = Blackfyre_14 #Maelys the Monstrous
+	}
+	8258.12.22 = {
+		holder = 0
+	}
+}
+c_goldfuror = {
+	8000.1.1 = {
+		holder = plc_10
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8196.6.1 = {
+		holder = Targaryen_95 # Aegor Bittersteel
+	}
+	8241.1.1 = { 
+		holder = Blackfyre_9 # Maelys Blackfyre
+	}
+	8251.1.1 = {
+		holder = Blackfyre_13 # Daemon Blackfyre
+	}
+	8252.11.11 = {
+		holder = Blackfyre_14 # Maelys the Monstrous
+	}
+	
+	# History Fix
+	# 8258.1.1 = {
+	# 	holder = Blackfyre_14
+	# 	#Actually Maelys, but granted on game start to fix bug
+	# }
+	8258.12.21 = {
+		holder = starter_plc_10
+	}
+	8258.12.22 = {
+		holder = starter_plc_10
+	}
+	# End of History Fix
+	
+	8260.10.1 = {
+		holder = Fossoway_58 # Derrick Fossoway
+	}
+	8262.1.1 = {
+		holder = Strickland_18 # Randyll Strickland
+	}
+	8265.1.1 = {
+		holder = Strickland_19 # Hosman Strickland
+	}
+	8268.1.1 = {
+		holder = Peake_75 # Utherydes Peake 
+	}
+	8272.1.1 = {
+		holder = Toyne_4 # Myles Toyne
+	}
+	8296.1.1 = {
+		holder = Strickland_1 # Homeless Harry Strickland
+	}
+}
+c_dyanosh = {
+	8000.1.1 = {
+		holder = plc_11
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		holder = Blackfyre_14 #Maelys the Monstrous
+	}
+	8258.12.22 = {
+		holder = starter_plc_11
+	}
+}
+c_lrolaembar = {
+	8000.1.1 = {
+		holder = plc_12
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		holder = Blackfyre_14 #Maelys the Monstrous
+	}
+	8258.12.22 = {
+		holder = starter_plc_12
+	}
+}
+c_ragged_hill = {
+	8000.1.1 = {
+		holder = plc_13
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		holder = Blackfyre_14 #Maelys the Monstrous
+	}
+	8258.12.22 = {
+		holder = starter_plc_13
+	}
+}
+c_rael_trunos = {
+	7800.1.1 = {
+		government = free_city_government
+	}
+	7809.1.1 = {
+		holder = Rhegan_20 # Mallor
+	}
+	7813.1.1 = {
+		holder = Rhegan_19 # Andrio
+	}
+	7827.1.1 = {
+		liege = k_myr		
+	}
+	7869.1.1 = {
+		holder = Rhegan_18 # Visario
+	}
+	7896.1.1 = {
+		holder = Rhegan_17 # Morgo
+	}
+	7912.1.1 = {
+		holder = Rhegan_16 # Errio
+	}
+	7929.1.1 = {
+		holder = Rhegan_15 # Beldeqo
+	}
+	7947.1.1 = {
+		holder = Rhegan_14 # Barghas
+	}
+	7989.1.1 = {
+		holder = Rhegan_13 # Amarro
+	}
+	8015.1.1 = {
+		holder = Rhegan_12 # Borso
+	}
+	8021.1.1 = {
+		holder = Rhegan_11 # Garynos
+	}
+	8043.1.1 = {
+		holder = Rhegan_10 # Thoros
+	}
+	8071.1.1 = {
+		holder = Rhegan_9 # Garynos
+	}
+	8109.1.1 = {
+		holder = Rhegan_8 # Garros
+	}
+	8135.1.1 = {
+		holder = Rhegan_7 # Nemarro
+	}
+	8147.1.1 = {
+		holder = Rhegan_6 # Ladono
+	}
+	8179.1.1 = {
+		holder = Rhegan_5 # Ladono
+	}
+	8225.1.1 = {
+		holder = Rhegan_4 # Malo
+	}
+	8250.1.1 = {
+		holder = Rhegan_3 # Luro
+	}
+	8273.1.1 = {
+		holder = Rhegan_1 # Togosh
+	}
+}
+c_pendanne = {
+	7827.1.1 = {
+		government = free_city_government
+		liege = k_myr
+	}
+	7840.1.1 = {
+		holder = Sordios_22 # Ghirio
+	}
+	7846.1.1 = {
+		holder = Sordios_21 # Gondo
+	}
+	7876.1.1 = {
+		holder = Sordios_20 # Borso
+	}
+	7882.1.1 = {
+		holder = Sordios_19 # Valerio
+	}
+	7923.1.1 = {
+		holder = Sordios_18 # Luro
+	}
+	7948.1.1 = {
+		holder = Sordios_17 # Malko
+	}
+	7953.1.1 = {
+		holder = Sordios_16 # Benkano
+	}
+	7966.1.1 = {
+		holder = Sordios_15 # Haego
+	}
+	7990.1.1 = {
+		holder = Sordios_14 # Brudo
+	}
+	8007.1.1 = {
+		holder = Sordios_13 # Sharako
+	}
+	8032.1.1 = {
+		holder = Sordios_12 # Harpalo
+	}
+	8067.1.1 = {
+		holder = Sordios_11 # Beldeqo
+	}
+	8082.1.1 = {
+		holder = Sordios_10 # Galeran
+	}
+	8115.1.1 = {
+		holder = Sordios_9 # Errio
+	}
+	8125.1.1 = {
+		holder = Sordios_8 # Sotros
+	}
+	8163.1.1 = {
+		holder = Sordios_7 # Togosh
+	}
+	8184.1.1 = {
+		holder = Sordios_6 # Mazio
+	}
+	8206.1.1 = {
+		holder = Sordios_5 # Ghovan
+	}
+	8217.1.1 = {
+		holder = Sordios_4 # Benkano
+	}
+	8239.1.1 = {
+		holder = Sordios_3 # Rhesos
+	}
+	8268.1.1 = {
+		holder = Sordios_2 # Mollos
+	}
+	8277.1.1 = {
+		holder = Sordios_1 # Visario
+	}
+}
+d_aesomyr = {
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion
+		holder = Lashare_1 #Liamond Lashare
+	}
+	8258.12.22 = {
+		holder = 0
+	}
+}
+c_qygaeryr = {
+	8000.1.1 = {
+		holder = plc_14
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		holder = Lashare_1 #Liamond Lashare
+	}
+	8258.12.22 = {
+		holder = starter_plc_14
+	}
+}
+c_restianys = {
+	8000.1.1 = {
+		holder = plc_15
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		holder = Lashare_1 #Liamond Lashare
+	}
+	8258.12.22 = {
+		holder = starter_plc_15
+	}
+}
+c_devosh = {
+	8000.1.1 = {
+		holder = plc_16
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		holder = Lashare_1 #Liamond Lashare
+	}
+	8258.12.22 = {
+		holder = starter_plc_16
+	}
+}
+c_erovosh = {
+	7800.1.1 = {
+		government = free_city_government
+	}
+	# Erosenes Family
+	7799.1.1 = {
+		holder = Erosenes_20 # Tybio
+	}
+	7801.1.1 = {
+		holder = Erosenes_19 # Rogoso
+	}
+	7817.1.1 = {
+		liege = k_lys		
+	}
+	7848.1.1 = {
+		holder = Erosenes_18 # Mardono
+	}
+	7875.1.1 = {
+		holder = Erosenes_17 # Ladono
+	}
+	7904.1.1 = {
+		holder = Erosenes_16 # Prendos
+	}
+	7922.1.1 = {
+		holder = Erosenes_15 # Fodio
+	}
+	7939.1.1 = {
+		holder = Erosenes_14 # Moreo
+	}
+	7973.1.1 = {
+		holder = Erosenes_13 # Kaamaro
+	}
+	7998.1.1 = {
+		holder = Erosenes_12 # Kasporio
+	}
+	8028.1.1 = {
+		holder = Erosenes_11 # Shanaro
+	}
+	8037.1.1 = {
+		holder = Erosenes_10 # Danaro
+	}
+	8091.1.1 = {
+		holder = Erosenes_8 # Valdane
+	}
+	8115.1.1 = {
+		holder = Erosenes_7 # Tigaro
+	}
+	8144.1.1 = {
+		holder = Erosenes_6 # Borso
+	}
+	8192.1.1 = {
+		holder = Erosenes_5 # Sambarro
+	}
+	8218.1.1 = {
+		holder = Erosenes_4 # Tybio
+	}
+	8238.1.1 = {
+		holder = Erosenes_3 # Dorseo
+	}
+	8254.1.1 = {
+		holder = Erosenes_2 # Lytheon
+	}
+	8276.1.1 = {
+		holder = Erosenes_1 # Harako
+	}
+}
+c_drelyia = {
+	8000.1.1 = {
+		holder = plc_17
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		holder = Lashare_1 #Liamond Lashare
+	}
+	8258.12.22 = {
+		holder = starter_plc_17
+	}
+}
+d_trade_cities = {
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Qhoqua_1 #The Ebon Prince
+		government = free_city_government
+	}
+	8260.9.1 = {
+		holder = 0
+	}
+}
+c_silkhead = {
+	7800.1.1 = {
+		government = free_city_government
+	}
+	7799.1.1 = {
+		holder = Erosenes_20 # Tybio
+	}
+	7801.1.1 = {
+		holder = Erosenes_19 # Rogoso
+	}
+	7817.1.1 = {
+		liege = k_lys		
+	}
+	7848.1.1 = {
+		holder = Erosenes_18 # Mardono
+	}
+	7875.1.1 = {
+		holder = Erosenes_17 # Ladono
+	}
+	7904.1.1 = {
+		holder = Erosenes_16 # Prendos
+	}
+	7922.1.1 = {
+		holder = Erosenes_15 # Fodio
+	}
+	7939.1.1 = {
+		holder = Erosenes_14 # Moreo
+	}
+	7973.1.1 = {
+		holder = Erosenes_13 # Kaamaro
+	}
+	7998.1.1 = {
+		holder = Erosenes_12 # Kasporio
+	}
+	8028.1.1 = {
+		holder = Erosenes_11 # Shanaro
+	}
+	8037.1.1 = {
+		holder = Erosenes_10 # Danaro
+	}
+	8091.1.1 = {
+		holder = Erosenes_8 # Valdane
+	}
+	8102.1.1 = {
+		holder = Lohar_8 # Sharako - C
+	}
+	8131.9.15 = {
+		holder = Bazanne_25 # Bambarro
+	}
+	8132.4.6 = {
+		holder = Rogare_2 # Lysandro - C
+	}
+	8135.4.1 = {
+		holder = Rogare_4 # Lysaro - C
+	}
+	8138.1.1 = {
+		holder = Rogare_9 # Moredo - C
+	}
+	8170.1.1 = {
+		holder = Rogare_20 # Gaharo
+	}
+	8196.1.1 = {
+		holder = Rogare_21 # Rovayn
+	}
+	8230.1.1 = {
+		holder = Rogare_33 # Therono
+	}
+	8257.1.1 = {
+		holder = Rogare_34 # Baybarso
+	}
+	8279.1.1 = {
+		holder = Rogare_35 # Morgoso
+	}
+}
+c_haehees = {
+	8000.1.1 = {
+		government = free_city_government
+		holder = plc_18
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Qhoqua_1 #The Ebon Prince
+	}
+	8260.9.1 = {
+		holder = starter_plc_18
+	}
+}
+c_timbercut = {
+	8000.1.1 = {
+		holder = plc_19
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Qhoqua_1 #The Ebon Prince
+	}
+	8260.9.1 = {
+		holder = starter_plc_19
+	}
+}
+c_unmecaeros = {
+	8000.1.1 = {
+		government = free_city_government
+		holder = plc_20
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Butcher_1 #Spotted Tom
+		government = free_city_government
+
+	}
+	8258.12.22 = {
+		holder = starter_plc_18
+	}
+}
+c_triarchs_fall = {
+	8000.1.1 = {
+		holder = plc_21
+	}
+	8096.1.2 = {
+		liege = e_three_daughters
+	}
+	8130.1.1 = {
+		liege = 0
+	}
+	8258.1.1 = {
+		liege = e_blackfyre_rebellion #Maelys
+		holder = Butcher_1 #Spotted Tom
+		government = free_city_government
+	}
+	8258.12.22 = {
+		holder = starter_plc_21
+	}
+}

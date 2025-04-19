@@ -389,17 +389,17 @@ std::string& Object::GetString() {
 
 ObjectMap& Object::GetMap() {
     if (m_Type == Type::SCALAR)
-        throw std::runtime_error("Cannot use GetEntries on scalar.");
+        throw std::runtime_error("Cannot use GetMap on scalar.");
     if (m_Type == Type::ARRAY)
-        throw std::runtime_error("Cannot use GetEntries on array.");
+        throw std::runtime_error("Cannot use GetMap on array.");
     return std::get<ObjectMap>(m_Value);
 }
 
 ObjectArray& Object::GetArray() {
     if (m_Type == Type::SCALAR)
-        throw std::runtime_error("Cannot use GetValues on scalar.");
+        throw std::runtime_error("Cannot use GetArray on scalar.");
     if (m_Type == Type::OBJECT)
-        throw std::runtime_error("Cannot use GetValues on object.");
+        throw std::runtime_error("Cannot use GetArray on object.");
     return std::get<ObjectArray>(m_Value);
 }
 

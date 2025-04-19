@@ -9,47 +9,41 @@ namespace Jomini {
 Object::Object() {}
 
 Object::Object(int scalar)
-: m_Scalar(std::to_string(scalar)), m_Type(Type::SCALAR)
+: m_Value(std::to_string(scalar)), m_Type(Type::SCALAR)
 {}
 
 Object::Object(double scalar)
-: m_Scalar(std::to_string(scalar)), m_Type(Type::SCALAR)
+: m_Value(std::to_string(scalar)), m_Type(Type::SCALAR)
 {}
 
 Object::Object(bool scalar)
-: m_Scalar((scalar ? "yes" : "no")), m_Type(Type::SCALAR)
+: m_Value((scalar ? "yes" : "no")), m_Type(Type::SCALAR)
 {}
 
 Object::Object(const std::string& scalar)
-: m_Scalar(scalar), m_Type(Type::SCALAR)
+: m_Value(scalar), m_Type(Type::SCALAR)
 {}
 
 Object::Object(const Date& scalar)
-: m_Scalar((std::string) scalar), m_Type(Type::SCALAR)
+: m_Value((std::string) scalar), m_Type(Type::SCALAR)
 {}
 
-Object::Object(const OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& objects)
-: m_Objects(objects), m_Type(Type::OBJECT)
+Object::Object(const ObjectMap& objects)
+: m_Value(objects), m_Type(Type::OBJECT)
 {}
 
-Object::Object(const std::vector<std::shared_ptr<Object>>& array)
-: m_Array(array), m_Type(Type::ARRAY)
+Object::Object(const ObjectArray& array)
+: m_Value(array), m_Type(Type::ARRAY)
+{}
+
+Object::Object(const std::variant<std::string, ObjectMap, ObjectArray>& value)
+: m_Value(value), m_Type((Type) value.index())
 {}
 
 Object::Object(const Object& object) {
     std::shared_ptr<Object> copy = object.Copy();
     m_Type = copy->m_Type;
-    switch (m_Type) {
-        case Type::SCALAR:
-            m_Scalar = copy->m_Scalar;
-            break;
-        case Type::OBJECT:
-            m_Objects = copy->m_Objects;
-            break;
-        case Type::ARRAY:
-            m_Array = copy->m_Array;
-            break;
-    }
+    m_Value = copy->m_Value;
 }
 
 Object::Object(const std::shared_ptr<Object>& object)
@@ -68,12 +62,13 @@ bool Object::Is(Type type) const {
 
 std::shared_ptr<Object> Object::Copy() const {
     if (m_Type == Type::SCALAR) {
-        return std::make_shared<Object>(m_Scalar);
+        return std::make_shared<Object>(m_Value);
     }
     else if (m_Type == Type::OBJECT) {
         // Make a deep copy of each objects in the original map.
-        OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>> objects;
-        for (auto [key, pair] : m_Objects) {
+        const ObjectMap& originalObjects = std::get<ObjectMap>(m_Value);
+        ObjectMap objects;
+        for (auto [key, pair] : originalObjects) {
             auto [op, value] = pair;
             objects.insert(key, std::make_pair(op, value->Copy()));
         }
@@ -81,9 +76,10 @@ std::shared_ptr<Object> Object::Copy() const {
     }
     else if (m_Type == Type::ARRAY) {
         // Make a deep copy of each objects in the original array.
-        std::vector<std::shared_ptr<Object>> array;
-        array.reserve(m_Array.size());
-        for (auto object : m_Array)
+        const ObjectArray& originalArray = std::get<ObjectArray>(m_Value);
+        ObjectArray array;
+        array.reserve(originalArray.size());
+        for (auto object : originalArray)
             array.push_back(object->Copy());
         return std::make_shared<Object>(array);
     }
@@ -95,15 +91,15 @@ void Object::ConvertToArray() {
         return;
     // If it is currently a scalar, then create an array with it.
     if (m_Type == Type::SCALAR) {
-        m_Array = std::vector<std::shared_ptr<Object>>{std::make_shared<Object>(m_Scalar)};
+        m_Value = ObjectArray{std::make_shared<Object>(m_Value)};
         m_Type = Type::ARRAY;
     }
     // If it is an empty object, then turn it into an array.
     // Otherwise, raise an exception.
     else if (m_Type == Type::OBJECT) {
-        if (!m_Objects.empty())
+        if (!std::get<ObjectMap>(m_Value).empty())
             throw std::runtime_error("Invalid conversion of non-empty object to array.");
-        m_Array = std::vector<std::shared_ptr<Object>>{};
+        m_Value = ObjectArray{};
         m_Type = Type::ARRAY;
     }
 }
@@ -118,9 +114,9 @@ void Object::ConvertToObject() {
     // If it is an empty array, then turn it into an object.
     // Otherwise, raise an exception.
     else if (m_Type == Type::ARRAY) {
-        if (!m_Array.empty())
+        if (!std::get<ObjectArray>(m_Value).empty())
             throw std::runtime_error("Invalid conversion of non-empty array to object.");
-        m_Objects = OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>{};
+        m_Value = ObjectMap{};
         m_Type = Type::OBJECT;
     }
 }
@@ -129,7 +125,7 @@ template <typename T> T Object::As() const {
     if (m_Type != Type::SCALAR)
         throw std::runtime_error("Invalid conversion of object to " + std::string(typeid(T).name()));
     try {
-        return (T) m_Scalar;
+        return (T) std::get<std::string>(m_Value);
     }
     catch (std::exception& e) {
         throw std::runtime_error(std::string(e.what()) + " Invalid conversion of object to " + std::string(typeid(T).name()));
@@ -139,14 +135,14 @@ template <typename T> T Object::As() const {
 template <> std::string Object::As() const {
     if (m_Type != Type::SCALAR)
         throw std::runtime_error("Invalid conversion of object to std::string.");
-    return m_Scalar;
+    return std::get<std::string>(m_Value);
 }
 
 template <> int Object::As() const {
     if (m_Type != Type::SCALAR)
         throw std::runtime_error("Invalid conversion of object to int.");
     try {
-        return std::stoi(m_Scalar);
+        return std::stoi(std::get<std::string>(m_Value));
     }
     catch (std::exception& e) {
         throw std::runtime_error(std::string(e.what()) + " Invalid conversion of object to int.");
@@ -157,7 +153,7 @@ template <> double Object::As() const {
     if (m_Type != Type::SCALAR)
         throw std::runtime_error("Invalid conversion of object to double.");
     try {
-        return std::stod(m_Scalar);
+        return std::stod(std::get<std::string>(m_Value));
     }
     catch (std::exception& e) {
         throw std::runtime_error(std::string(e.what()) + " Invalid conversion of object to double.");
@@ -167,9 +163,9 @@ template <> double Object::As() const {
 template <> bool Object::As() const {
     if (m_Type != Type::SCALAR)
         throw std::runtime_error("Invalid conversion of object to boolean.");
-    if (m_Scalar == "yes")
+    if (std::get<std::string>(m_Value) == "yes")
         return true;
-    else if (m_Scalar == "no")
+    else if (std::get<std::string>(m_Value) == "no")
         return false;
     throw std::runtime_error("Invalid conversion of object to boolean.");
 }
@@ -178,7 +174,7 @@ template <> Date Object::As() const {
     if (m_Type != Type::SCALAR)
         throw std::runtime_error("Invalid conversion of object to date.");
     try {
-        return Date(m_Scalar);
+        return Date(std::get<std::string>(m_Value));
     }
     catch (std::exception& e) {
         throw std::runtime_error(std::string(e.what()) + " Invalid conversion of object to date.");
@@ -188,16 +184,17 @@ template <> Date Object::As() const {
 template <typename T> std::vector<T> Object::AsArray() const {
     if (m_Type != Type::ARRAY)
         throw std::runtime_error("Invalid conversion of object to array of " + std::string(typeid(T).name()));
-    std::vector<T> arr;
-    arr.reserve(m_Array.size());
+    ObjectArray array = std::get<ObjectArray>(m_Value);
+    std::vector<T> newArray;
+    newArray.reserve(array.size());
     try {
-        for (auto obj : m_Array)
-            arr.push_back(obj->As<T>());
+        for (auto obj : array)
+            newArray.push_back(obj->As<T>());
     }
     catch (std::exception& e) {
         throw std::runtime_error(std::string(e.what()) + " Invalid conversion of object to array of " + std::string(typeid(T).name()));
     }
-    return arr;
+    return newArray;
 }
 
 template std::vector<std::string> Object::AsArray() const;
@@ -209,8 +206,7 @@ template std::vector<Date> Object::AsArray() const;
 template <> std::vector<std::shared_ptr<Object>> Object::AsArray() const {
     if (m_Type != Type::ARRAY)
         throw std::runtime_error("Invalid conversion of object to array of object");
-    // TODO: make a deep copy.
-    return m_Array;
+    return this->Copy()->GetArray();
 }
 
 bool Object::Contains(const std::string& key) const {
@@ -218,7 +214,7 @@ bool Object::Contains(const std::string& key) const {
         throw std::runtime_error("Cannot use Contains on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Contains on array.");
-    return m_Objects.contains(key);
+    return std::get<ObjectMap>(m_Value).contains(key);
 }
 
 std::shared_ptr<Object> Object::Get(const std::string& key) {
@@ -226,7 +222,7 @@ std::shared_ptr<Object> Object::Get(const std::string& key) {
         throw std::runtime_error("Cannot use Get on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Get on array.");
-    return m_Objects.at(key).second;
+    return std::get<ObjectMap>(m_Value).at(key).second;
 }
 
 Operator Object::GetOperator(const std::string& key) {
@@ -234,7 +230,7 @@ Operator Object::GetOperator(const std::string& key) {
         throw std::runtime_error("Cannot use GetOperator on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use GetOperator on array.");
-    return m_Objects.at(key).first;
+    return std::get<ObjectMap>(m_Value).at(key).first;
 }
 
 template <typename T> void Object::Put(std::string key, T value, Operator op) {
@@ -242,7 +238,7 @@ template <typename T> void Object::Put(std::string key, T value, Operator op) {
         throw std::runtime_error("Cannot use Put on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Put on array.");
-    m_Objects.insert(key, std::make_pair(op, std::make_shared<Object>(value)));
+    std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, std::make_shared<Object>(value)));
 }
 
 template <> void Object::Put(std::string key, std::shared_ptr<Object> value, Operator op) {
@@ -250,7 +246,7 @@ template <> void Object::Put(std::string key, std::shared_ptr<Object> value, Ope
         throw std::runtime_error("Cannot use Put on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Put on array.");
-    m_Objects.insert(key, std::make_pair(op, value));
+    std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, value));
 }
 
 template <typename T> void Object::Push(T value, bool convertToArray) {
@@ -259,7 +255,7 @@ template <typename T> void Object::Push(T value, bool convertToArray) {
             throw std::runtime_error("Cannot use Push on scalar or object.");
         this->ConvertToArray();
     }
-    m_Array.push_back(std::make_shared<Object>(value));
+    std::get<ObjectArray>(m_Value).push_back(std::make_shared<Object>(value));
 }
 
 template <> void Object::Push(std::shared_ptr<Object> value, bool convertToArray) {
@@ -268,31 +264,31 @@ template <> void Object::Push(std::shared_ptr<Object> value, bool convertToArray
             throw std::runtime_error("Cannot use Push on scalar or object.");
         this->ConvertToArray();
     }
-    m_Array.push_back(value);
+    std::get<ObjectArray>(m_Value).push_back(value);
 }
 
-std::string& Object::GetScalar() {
+std::string& Object::GetString() {
     if (m_Type == Type::OBJECT)
-        throw std::runtime_error("Cannot use GetScalar on object.");
+        throw std::runtime_error("Cannot use GetString on object.");
     if (m_Type == Type::ARRAY)
-        throw std::runtime_error("Cannot use GetScalar on array.");
-    return m_Scalar;
+        throw std::runtime_error("Cannot use GetString on array.");
+    return std::get<std::string>(m_Value);
 }
 
-OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& Object::GetEntries() {
+ObjectMap& Object::GetMap() {
     if (m_Type == Type::SCALAR)
         throw std::runtime_error("Cannot use GetEntries on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use GetEntries on array.");
-    return m_Objects;
+    return std::get<ObjectMap>(m_Value);
 }
 
-std::vector<std::shared_ptr<Object>>& Object::GetValues() {
+ObjectArray& Object::GetArray() {
     if (m_Type == Type::SCALAR)
         throw std::runtime_error("Cannot use GetValues on scalar.");
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetValues on object.");
-    return m_Array;
+    return std::get<ObjectArray>(m_Value);
 }
 
 //////////////////////////////////////////////////////////

@@ -1,8 +1,7 @@
-key1 = {}
-key2 = { v1 }
-key3 = { v1 v2 }
-key4 = { v1 v2 v3 }
+key1 = { v1 }
+key2 = { v1 v2 }
+key3 = { v1 v2 v3 }
 
-key5 = { 10 }
-key6 = { 10 20 }
-key7 = { 10 20 30 }
+key4 = { 10 }
+key5 = { 10 20 }
+key6 = { 10 20 30 }

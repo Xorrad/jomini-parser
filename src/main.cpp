@@ -22,14 +22,14 @@ int main(int argc, char** argv) {
     doctest::Context context(argc, argv);
     context.run();
 
-    // ManualTests();
+    ManualTests();
     Benchmark();
 
     return 0;
 }
 
 void ManualTests() {
-
+    std::shared_ptr<Object> object = ParseFile("tests/00_tests.txt");
 }
 
 void Benchmark() {
@@ -51,7 +51,7 @@ void Benchmark() {
             std::shared_ptr<Object> data = ParseFile(filePath);
             auto end = std::chrono::high_resolution_clock::now();
             result.duration += end - start;
-            result.entries += data->GetEntries().size();
+            result.entries += data->GetMap().size();
         }
 
         result.filePath = filePath;
@@ -77,8 +77,8 @@ void Benchmark() {
 
 std::string SerializeVector(const std::vector<std::string>& vec) {
     std::string str = "{";
-    for (auto v : vec)
-        str += " " + v + " ";
+    for (int i = 0; i < vec.size(); i++)
+        str += " " + vec[i] + (i == vec.size()-1 ? " " : "");
     return str + "}";
 }
 
@@ -86,7 +86,7 @@ TEST_CASE("[01_basic] basic key-op-scalar") {
     std::shared_ptr<Object> object = ParseFile("tests/01_basic.txt");
 
     CHECK(object->GetType() == Type::OBJECT);
-    CHECK(object->GetEntries().size() == 1);
+    CHECK(object->GetMap().size() == 1);
     CHECK(object->Contains("key"));
     CHECK(object->Get("key") != nullptr);
     CHECK(object->Get("key")->GetType() == Type::SCALAR);
@@ -98,7 +98,7 @@ TEST_CASE("[02_basic_multi] multilines key-op-scalar") {
     std::shared_ptr<Object> object = ParseFile("tests/02_basic_multi.txt");
 
     CHECK(object->GetType() == Type::OBJECT);
-    CHECK(object->GetEntries().size() == 4);
+    CHECK(object->GetMap().size() == 4);
 
     for (int i = 1; i < 5; i++) {
         std::string key = "key" + std::to_string(i);
@@ -112,7 +112,7 @@ TEST_CASE("[03_operators] operators") {
     std::shared_ptr<Object> object = ParseFile("tests/03_operators.txt");
 
     CHECK(object->GetType() == Type::OBJECT);
-    CHECK(object->GetEntries().size() == 7);
+    CHECK(object->GetMap().size() == 7);
     CHECK(object->GetOperator("equal") == Operator::EQUAL);
     CHECK(object->GetOperator("less") == Operator::LESS);
     CHECK(object->GetOperator("less_equal") == Operator::LESS_EQUAL);
@@ -126,15 +126,15 @@ TEST_CASE("[04_nested_object] nested objects") {
     std::shared_ptr<Object> object = ParseFile("tests/04_nested_objects.txt");
 
     CHECK(object->GetType() == Type::OBJECT);
-    CHECK(object->GetEntries().size() == 1);
+    CHECK(object->GetMap().size() == 1);
 
     CHECK(object->Contains("key1"));
     CHECK(object->Get("key1")->GetType() == Type::OBJECT);
-    CHECK(object->Get("key1")->GetEntries().size() == 2);
+    CHECK(object->Get("key1")->GetMap().size() == 2);
     
     CHECK(object->Get("key1")->Contains("key2"));
     CHECK(object->Get("key1")->Get("key2")->GetType() == Type::OBJECT);
-    CHECK(object->Get("key1")->Get("key2")->GetEntries().size() == 1);
+    CHECK(object->Get("key1")->Get("key2")->GetMap().size() == 1);
     CHECK(object->Get("key1")->Get("key2")->Contains("key3"));
     CHECK(object->Get("key1")->Get("key2")->Get("key3")->GetType() == Type::SCALAR);
     CHECK(object->Get("key1")->Get("key2")->Get("key3")->As<std::string>() == "value3");
@@ -175,31 +175,29 @@ TEST_CASE("[06_keys] keys") {
 TEST_CASE("[07_keys_ordering] keys ordering once parsed") {
     std::shared_ptr<Object> object = ParseFile("tests/07_keys_ordering.txt");
 
-    CHECK(object->GetEntries().keys().at(0) == "key1");
-    CHECK(object->GetEntries().keys().at(1) == "key2");
-    CHECK(object->GetEntries().keys().at(2) == "key0");
-    CHECK(object->GetEntries().keys().at(3) == "key3");
-    CHECK(object->Get("key3")->GetEntries().keys().at(0) == "key2");
-    CHECK(object->Get("key3")->GetEntries().keys().at(1) == "key1");
+    CHECK(object->GetMap().keys().at(0) == "key1");
+    CHECK(object->GetMap().keys().at(1) == "key2");
+    CHECK(object->GetMap().keys().at(2) == "key0");
+    CHECK(object->GetMap().keys().at(3) == "key3");
+    CHECK(object->Get("key3")->GetMap().keys().at(0) == "key2");
+    CHECK(object->Get("key3")->GetMap().keys().at(1) == "key1");
 }
 
 TEST_CASE("[08_arrays_basic] basic arrays") {
     std::shared_ptr<Object> object = ParseFile("tests/08_arrays_basic.txt");
 
     CHECK(object->Get("key1")->GetType() == Type::ARRAY);
-    CHECK(SerializeVector(object->Get("key1")->AsArray<std::string>()) == "{}");
+    CHECK(SerializeVector(object->Get("key1")->AsArray<std::string>()) == "{ v1 }");
     CHECK(object->Get("key2")->GetType() == Type::ARRAY);
-    CHECK(SerializeVector(object->Get("key2")->AsArray<std::string>()) == "{ v1 }");
+    CHECK(SerializeVector(object->Get("key2")->AsArray<std::string>()) == "{ v1 v2 }");
     CHECK(object->Get("key3")->GetType() == Type::ARRAY);
-    CHECK(SerializeVector(object->Get("key3")->AsArray<std::string>()) == "{ v1 v2 }");
+    CHECK(SerializeVector(object->Get("key3")->AsArray<std::string>()) == "{ v1 v2 v3 }");
     CHECK(object->Get("key4")->GetType() == Type::ARRAY);
-    CHECK(SerializeVector(object->Get("key4")->AsArray<std::string>()) == "{ v1 v2 v3 }");
+    CHECK(SerializeVector(object->Get("key4")->AsArray<std::string>()) == "{ 10 }");
     CHECK(object->Get("key5")->GetType() == Type::ARRAY);
-    CHECK(SerializeVector(object->Get("key5")->AsArray<std::string>()) == "{ 10 }");
+    CHECK(SerializeVector(object->Get("key5")->AsArray<std::string>()) == "{ 10 20 }");
     CHECK(object->Get("key6")->GetType() == Type::ARRAY);
-    CHECK(SerializeVector(object->Get("key6")->AsArray<std::string>()) == "{ 10 20 }");
-    CHECK(object->Get("key7")->GetType() == Type::ARRAY);
-    CHECK(SerializeVector(object->Get("key7")->AsArray<std::string>()) == "{ 10 20 30 }");
+    CHECK(SerializeVector(object->Get("key6")->AsArray<std::string>()) == "{ 10 20 30 }");
 }
 
 TEST_CASE("[09_arrays_complex] complex arrays") {

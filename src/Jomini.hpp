@@ -8,6 +8,7 @@
 #include <list>
 #include <utility>
 #include <fstream>
+#include <variant>
 
 namespace Jomini {
 
@@ -231,6 +232,9 @@ namespace Jomini {
         { Operator::NOT_NULL, "?=" },
     };
 
+    using ObjectMap = OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>;
+    using ObjectArray = std::vector<std::shared_ptr<Object>>;
+
     class Object {
         public:
             Object();
@@ -239,8 +243,9 @@ namespace Jomini {
             Object(bool scalar);
             Object(const std::string& scalar);
             Object(const Date& scalar);
-            Object(const OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& objects);
-            Object(const std::vector<std::shared_ptr<Object>>& array);
+            Object(const ObjectMap& objects);
+            Object(const ObjectArray& array);
+            Object(const std::variant<std::string, ObjectMap, ObjectArray>& value);
             Object(const Object& object);
             Object(const std::shared_ptr<Object>& object);
             ~Object();
@@ -262,16 +267,12 @@ namespace Jomini {
 
             template <typename T> void Push(T value, bool convertToArray = false);
 
-            std::string& GetScalar();
-            OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& GetEntries();
-            std::vector<std::shared_ptr<Object>>& GetValues();
+            std::string& GetString();
+            ObjectMap& GetMap();
+            ObjectArray& GetArray();
 
         private:
-            union {
-                std::string m_Scalar;
-                OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>> m_Objects;
-                std::vector<std::shared_ptr<Object>> m_Array;
-            };
+            std::variant<std::string, ObjectMap, ObjectArray> m_Value;
             Type m_Type;
     };
     

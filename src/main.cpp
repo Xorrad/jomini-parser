@@ -223,3 +223,35 @@ TEST_CASE("[10_comments] comments") {
     CHECK(object->Get("key4")->GetType() == Type::ARRAY);
     CHECK(SerializeVector(object->Get("key4")->AsArray<std::string>()) == "{ v1 v2 }");
 }
+
+TEST_CASE("[11_utf8] utf8 characters") {
+    std::shared_ptr<Object> object = ParseFile("tests/11_utf8.txt");
+
+    CHECK(object->Get("latin1")->GetType() == Type::SCALAR);
+    CHECK(object->Get("latin1")->As<std::string>() == "éàâêëïîôöäüûù");
+    CHECK(object->Get("éàâêëïîôöäüûù")->GetType() == Type::SCALAR);
+    CHECK(object->Get("éàâêëïîôöäüûù")->As<std::string>() == "latin2");
+    
+    CHECK(object->Get("cyrillic1")->GetType() == Type::SCALAR);
+    CHECK(object->Get("cyrillic1")->As<std::string>() == "\"бутерброд\"");
+    CHECK(object->Get("cyrillic2")->GetType() == Type::SCALAR);
+    CHECK(object->Get("cyrillic2")->As<std::string>() == "ничто");
+    CHECK(object->Get("бутерброд")->GetType() == Type::SCALAR);
+    CHECK(object->Get("бутерброд")->As<std::string>() == "cyrillic3");
+
+    CHECK(object->Get("japanese1")->GetType() == Type::SCALAR);
+    CHECK(object->Get("japanese1")->As<std::string>() == "\"やすむ\"");
+    CHECK(object->Get("japanese2")->GetType() == Type::SCALAR);
+    CHECK(object->Get("japanese2")->As<std::string>() == "カタツムリ");
+    CHECK(object->Get("japanese3")->GetType() == Type::SCALAR);
+    CHECK(object->Get("japanese3")->As<std::string>() == "蝸牛");
+    CHECK(object->Get("蝸牛")->GetType() == Type::SCALAR);
+    CHECK(object->Get("蝸牛")->As<std::string>() == "japanese4");
+
+    CHECK(object->Get("chinese1")->GetType() == Type::SCALAR);
+    CHECK(object->Get("chinese1")->As<std::string>() == "\"重要\"");
+    CHECK(object->Get("chinese2")->GetType() == Type::SCALAR);
+    CHECK(object->Get("chinese2")->As<std::string>() == "眼泪");
+    CHECK(object->Get("眼泪")->GetType() == Type::SCALAR);
+    CHECK(object->Get("眼泪")->As<std::string>() == "chinese3");
+}

@@ -90,6 +90,41 @@ std::shared_ptr<Object> Object::Copy() const {
     return nullptr;
 }
 
+void Object::ConvertToArray() {
+    if (m_Type == Type::ARRAY)
+        return;
+    // If it is currently a scalar, then create an array with it.
+    if (m_Type == Type::SCALAR) {
+        m_Array = std::vector<std::shared_ptr<Object>>{std::make_shared<Object>(m_Scalar)};
+        m_Type = Type::ARRAY;
+    }
+    // If it is an empty object, then turn it into an array.
+    // Otherwise, raise an exception.
+    else if (m_Type == Type::OBJECT) {
+        if (!m_Objects.empty())
+            throw std::runtime_error("Invalid conversion of non-empty object to array.");
+        m_Array = std::vector<std::shared_ptr<Object>>{};
+        m_Type = Type::ARRAY;
+    }
+}
+
+void Object::ConvertToObject() {
+    if (m_Type == Type::OBJECT)
+        return;
+    // If it is currently a scalar, then raise an exception.
+    if (m_Type == Type::SCALAR) {
+        throw std::runtime_error("Invalid conversion of scalar to object.");
+    }
+    // If it is an empty array, then turn it into an object.
+    // Otherwise, raise an exception.
+    else if (m_Type == Type::ARRAY) {
+        if (!m_Array.empty())
+            throw std::runtime_error("Invalid conversion of non-empty array to object.");
+        m_Objects = OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>{};
+        m_Type = Type::OBJECT;
+    }
+}
+
 template <typename T> T Object::As() const {
     if (m_Type != Type::SCALAR)
         throw std::runtime_error("Invalid conversion of object to " + std::string(typeid(T).name()));
@@ -218,6 +253,24 @@ template <> void Object::Put(std::string key, std::shared_ptr<Object> value, Ope
     m_Objects.insert(key, std::make_pair(op, value));
 }
 
+template <typename T> void Object::Push(T value, bool convertToArray) {
+    if (m_Type != Type::ARRAY) {
+        if (!convertToArray)
+            throw std::runtime_error("Cannot use Push on scalar or object.");
+        this->ConvertToArray();
+    }
+    m_Array.push_back(std::make_shared<Object>(value));
+}
+
+template <> void Object::Push(std::shared_ptr<Object> value, bool convertToArray) {
+    if (m_Type != Type::ARRAY) {
+        if (!convertToArray)
+            throw std::runtime_error("Cannot use Push on scalar or object.");
+        this->ConvertToArray();
+    }
+    m_Array.push_back(value);
+}
+
 std::string& Object::GetScalar() {
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetScalar on object.");
@@ -273,7 +326,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
     // Initialize the main object, key and operator.
     // Depending on what is read, the object can be an scalar, an object (map) or an array.
     // Key and operator are not used if it isn't parsing a map object.
-    std::shared_ptr<Object> mainObject = std::make_shared<Object>(OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>());
+    std::shared_ptr<Object> mainObject = std::make_shared<Object>(OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>{});
     std::string key = "";
     Operator op = Operator::EQUAL;
 
@@ -359,9 +412,9 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: non-blank, non-operator, non-bracket
         else if (state == 1) {
             if (IS_OPERATOR(ch))
-                throw std::runtime_error("Failed to parse operator in state #1");
+                throw std::runtime_error("Failed to parse operator in state #1b");
             if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #1");
+                throw std::runtime_error("Failed to parse bracket in state #1b");
             key = std::string(1, ch) + CaptureTillBlank(ch == '"');
             state = 2;
         }
@@ -405,7 +458,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             }
             state = 3;
         }
-        // State #2b: parsing object value after #1 and transform into an array.
+        // State #2b: parsing an array with a property (rgb, hsv, LIST, RANGE...).
         //  - from: state #1b
         //  - next: state #4
         //  - accepts: {
@@ -413,16 +466,30 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             throw std::runtime_error("parsing array unimplemented");
             // if (!object->GetEntries().empty())
             //     throw std::runtime_error("Failed to parse object in state #2b");
-            // object = std::make_shared<Object>(std::vector<std::shared_ptr<Object>>());
+            // object = std::make_shared<Object>(std::vector<std::shared_ptr<Object>>{});
             // std::shared_ptr<Object> value = Parse(stream, 1);
 
         }
-        // State #2c: parsing scalar value and transform into an array.
+        // State #2c: stop parsing a single value array.
+        //  - from: state #1b
+        //  - next: terminal
+        //  - accepts: }
+        else if (state == 2 && ch == '}') {
+            mainObject->Push(key, true);
+            return mainObject;
+        }
+        // State #2d: parsing an array.
         //  - from: state #1b
         //  - next: state #4
         //  - accepts: non-blank
         else if (state == 2) {
-            throw std::runtime_error("parsing array unimplemented");
+            if (IS_BRACKET(ch))
+                throw std::runtime_error("Failed to parse bracket in state #2c");
+            std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
+            mainObject->Push(key, true);
+            mainObject->Push(buffer);
+            key = "";
+            state = 4;
         }
         // State #3a: parsing object value.
         //  - from: state #2a
@@ -447,6 +514,26 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             mainObject->Put(key, std::make_shared<Object>(buffer), op);
             key = "";
             state = 1;
+        }
+        // State #4a: stop parsing an array.
+        //  - from: state #2b, state #2d
+        //  - next: terminal
+        //  - accepts: }
+        else if (state == 4 && ch == '}') {
+            if (depth == 0)
+                throw std::runtime_error("Failed to parse bracket in state #4a");
+            return mainObject;
+        }
+        // State #4b: continue parsing an array.
+        //  - from: state #2b, state #2d
+        //  - next: state #4
+        //  - accepts: non-blank
+        else if (state == 4) {
+            if (IS_BRACKET(ch))
+                throw std::runtime_error("Failed to parse bracket in state #4b");
+            std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
+            mainObject->Push(buffer);
+            state = 4;
         }
     }
 

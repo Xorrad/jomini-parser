@@ -110,6 +110,8 @@ namespace Jomini {
                 for (auto [key, value] : entries)
                     this->insert(key, value);
             }
+            
+            ~OrderedMap() {}
 
             void insert(const K& key, const V& value) {
                 if (m_Index.find(key) == m_Index.end()) {
@@ -247,6 +249,9 @@ namespace Jomini {
             bool Is(Type type) const;
             std::shared_ptr<Object> Copy() const;
 
+            void ConvertToArray();
+            void ConvertToObject();
+
             template <typename T> T As() const;
             template <typename T> std::vector<T> AsArray() const;
 
@@ -254,6 +259,8 @@ namespace Jomini {
             std::shared_ptr<Object> Get(const std::string& key);
             Operator GetOperator(const std::string& key);
             template <typename T> void Put(std::string key, T value, Operator op = Operator::EQUAL);
+
+            template <typename T> void Push(T value, bool convertToArray = false);
 
             std::string& GetScalar();
             OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>& GetEntries();

@@ -587,10 +587,28 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: {
         else if (state == 3 && ch == '{') {
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+
             // Empty object are by default all map objects, so if there is
             // a list flags attached, the convert it to an array.
             if (object->Is(Type::OBJECT) && ((bool) (flags & (Flags::LIST | Flags::RANGE))))
                 object->ConvertToArray();
+
+            // Convert a range to an array.
+            if ((bool) (flags & Flags::RANGE)) {
+                if (!object->Is(Type::ARRAY))
+                    throw std::runtime_error("Failed to parse range in state #3a");
+                ObjectArray& array = object->GetArray();
+                if (array.size() != 2 || !array.at(0)->Is(Type::SCALAR) || !array.at(1)->Is(Type::SCALAR))
+                    throw std::runtime_error("Failed to parse range in state #3a");
+                int a = array.at(0)->As<int>();
+                int b = array.at(1)->As<int>();
+                array.clear();
+                if (a <= b) for (int i = a; i <= b; i++)
+                    array.push_back(std::make_shared<Object>(i));
+                else for (int i = a; i >= b; i--)
+                    array.push_back(std::make_shared<Object>(i));
+            }
+            
             mainObject->Merge(key, object, op);
             mainObject->Get(key)->SetFlag(flags, true);
             flags = Flags::NONE;

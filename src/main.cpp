@@ -335,7 +335,7 @@ TEST_CASE("[14_exceptions_missing_value] value missing after key and operator") 
         ParseFile("tests/14_exceptions_missing_value.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/14_exceptions_missing_value.txt:0:5: error: expected a value after '='\n\t0 | key =\n\t  |      ^\n\t  |      |\n\t  |      missing value");
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/14_exceptions_missing_value.txt:1:6: error: expected a value after '='\n\t1 | key =\n\t  |      ^\n\t  |      |\n\t  |      missing value");
     }
 }
 
@@ -346,7 +346,7 @@ TEST_CASE("[15_exceptions_missing_operator] operator missing after key") {
         ParseFile("tests/15_exceptions_missing_operator.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/15_exceptions_missing_operator.txt:0:3: error: expected an operator after 'key'\n\t0 | key\n\t  |    ^\n\t  |    |\n\t  |    missing operator");
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/15_exceptions_missing_operator.txt:1:4: error: expected an operator after 'key'\n\t1 | key\n\t  |    ^\n\t  |    |\n\t  |    missing operator");
     }
 }
 
@@ -357,6 +357,6 @@ TEST_CASE("[16_exceptions_unmatched_closing_bracket] unexpected closing bracket 
         ParseFile("tests/16_exceptions_unmatched_closing_bracket.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unmatched_closing_bracket.txt:0:12: error: unexpected closing brace '}'\n\t0 | key = value }\n\t  |             ^\n\t  |             |\n\t  |             unmatched closing brace");
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unmatched_closing_bracket.txt:1:13: error: unexpected closing brace '}'\n\t1 | key = value }\n\t  |             ^\n\t  |             |\n\t  |             unmatched closing brace");
     }
 }

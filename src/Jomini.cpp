@@ -423,8 +423,8 @@ void Parser::ThrowError(const std::string& error, const std::string& cursorError
     message += std::format(
         "{}:{}:{}: error: {}\n",
         m_FilePath,
-        m_CurrentLine,
-        std::max(0, m_CurrentCursor+cursorOffset),
+        m_CurrentLine+1,
+        std::max(1, m_CurrentCursor+cursorOffset+1),
         error
     );
 
@@ -435,7 +435,7 @@ void Parser::ThrowError(const std::string& error, const std::string& cursorError
         "\t{} | {}^\n"
         "\t{} | {}|\n"
         "\t{} | {}{}",
-        m_CurrentLine, lines.at(m_CurrentLine),
+        m_CurrentLine+1, lines.at(m_CurrentLine),
         tab1, tab2,
         tab1, tab2,
         tab1, tab2, cursorError

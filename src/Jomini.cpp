@@ -402,20 +402,32 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
                 throw std::runtime_error("Failed to parse bracket in state #1a");
             return mainObject;
         }
-        // State #1b: parsing key.
+        // State #1b: parsing object in array.
+        //  - from: initial, state #3
+        //  - next: state #4
+        //  - accepts: {
+        else if (state == 1 && ch == '{') {
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+                throw std::runtime_error("Failed to parse object in state #2b");
+            std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            mainObject->Push(object, true);
+            key = "";
+            state = 4;
+        }
+        // State #1c: parsing key.
         //  - from: initial, state #3
         //  - next: state #2
         //  - accepts: non-blank, non-operator, non-bracket
         else if (state == 1) {
             if (IS_OPERATOR(ch))
-                throw std::runtime_error("Failed to parse operator in state #1b");
+                throw std::runtime_error("Failed to parse operator in state #1c");
             if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #1b");
+                throw std::runtime_error("Failed to parse bracket in state #1c");
             key = std::string(1, ch) + CaptureTillBlank(ch == '"');
             state = 2;
         }
         // State #2a: parsing operator after #1.
-        //  - from: state #1b
+        //  - from: state #1c
         //  - next: state #3
         //  - accepts: =, <, >, !, ?
         else if (state == 2 && IS_OPERATOR(ch)) {
@@ -454,33 +466,38 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             }
             state = 3;
         }
-        // State #2b: parsing an array with a property (rgb, hsv, LIST, RANGE...).
-        //  - from: state #1b
+        // State #2b: parsing an object after a scalar and create an array.
+        //  - from: state #1c
         //  - next: state #4
         //  - accepts: {
         else if (state == 2 && ch == '{') {
-            throw std::runtime_error("parsing array unimplemented");
-            // if (!object->GetEntries().empty())
-            //     throw std::runtime_error("Failed to parse object in state #2b");
-            // object = std::make_shared<Object>(std::vector<std::shared_ptr<Object>>{});
-            // std::shared_ptr<Object> value = Parse(stream, 1);
-
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+                throw std::runtime_error("Failed to parse object in state #2b");
+            std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            mainObject->Push(key, true);
+            mainObject->Push(object);
+            key = "";
+            state = 4;
         }
         // State #2c: stop parsing a single value array.
-        //  - from: state #1b
+        //  - from: state #1c
         //  - next: terminal
         //  - accepts: }
         else if (state == 2 && ch == '}') {
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+                throw std::runtime_error("Failed to parse object in state #2c");
             mainObject->Push(key, true);
             return mainObject;
         }
         // State #2d: parsing an array.
-        //  - from: state #1b
+        //  - from: state #1c
         //  - next: state #4
         //  - accepts: non-blank
         else if (state == 2) {
             if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #2c");
+                throw std::runtime_error("Failed to parse bracket in state #2d");
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+                throw std::runtime_error("Failed to parse object in state #2d");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             mainObject->Push(key, true);
             mainObject->Push(buffer);
@@ -520,7 +537,17 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
                 throw std::runtime_error("Failed to parse bracket in state #4a");
             return mainObject;
         }
-        // State #4b: continue parsing an array.
+        // State #4b: start parsing an object inside an array.
+        //  - from: state #2b, state #2d
+        //  - next: state #4
+        //  - accepts: {
+        else if (state == 4 && ch == '{') {
+            std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            mainObject->Push(object);
+            key = "";
+            state = 4;
+        }
+        // State #4c: continue parsing an array.
         //  - from: state #2b, state #2d
         //  - next: state #4
         //  - accepts: non-blank

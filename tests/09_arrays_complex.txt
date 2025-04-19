@@ -1,3 +1,11 @@
 key1 = { culture:roman culture:breton }
 key2 = { 10 -10 10.05 -10.05 yes no value1 "Maximus Decimus Meridius" 2025.10.31 }
 key3 = { @var 100 }
+key4 = { { name = "Claudius" } }
+key5 = {
+    { name = "Julius" }
+    { name = "Gaius" }
+    { name = "Maximus" }
+}
+key6 = { 10 { name = "Aurelius" } culture:greek }
+key7 = { 2025.6.2 { name = "Vespasian" } }

@@ -30,6 +30,12 @@ int main(int argc, char** argv) {
 
 void ManualTests() {
     std::shared_ptr<Object> object = ParseFile("tests/00_tests.txt");
+
+    std::cout << "keys:" << std::endl;
+    for (auto [key, pair] : object->GetMap()) {
+        std::cout << key << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 void Benchmark() {
@@ -80,6 +86,13 @@ std::string SerializeVector(const std::vector<std::string>& vec) {
     for (int i = 0; i < vec.size(); i++)
         str += " " + vec[i] + (i == vec.size()-1 ? " " : "");
     return str + "}";
+}
+
+TEST_CASE("[00_empty] empty file") {
+    std::shared_ptr<Object> object = ParseFile("tests/00_empty.txt");
+
+    CHECK(object->GetType() == Type::OBJECT);
+    CHECK(object->GetMap().size() == 0);
 }
 
 TEST_CASE("[01_basic] basic key-op-scalar") {
@@ -209,6 +222,27 @@ TEST_CASE("[09_arrays_complex] complex arrays") {
     CHECK(SerializeVector(object->Get("key2")->AsArray<std::string>()) == "{ 10 -10 10.05 -10.05 yes no value1 \"Maximus Decimus Meridius\" 2025.10.31 }");
     CHECK(object->Get("key3")->GetType() == Type::ARRAY);
     CHECK(SerializeVector(object->Get("key3")->AsArray<std::string>()) == "{ @var 100 }");
+    
+    CHECK(object->Get("key4")->GetType() == Type::ARRAY);
+    CHECK(object->Get("key4")->GetArray().size() == 1);
+    CHECK(object->Get("key4")->GetArray().at(0)->Get("name")->As<std::string>() == "\"Claudius\"");
+
+    CHECK(object->Get("key5")->GetType() == Type::ARRAY);
+    CHECK(object->Get("key5")->GetArray().size() == 3);
+    CHECK(object->Get("key5")->GetArray().at(0)->Get("name")->As<std::string>() == "\"Julius\"");
+    CHECK(object->Get("key5")->GetArray().at(1)->Get("name")->As<std::string>() == "\"Gaius\"");
+    CHECK(object->Get("key5")->GetArray().at(2)->Get("name")->As<std::string>() == "\"Maximus\"");
+
+    CHECK(object->Get("key6")->GetType() == Type::ARRAY);
+    CHECK(object->Get("key6")->GetArray().size() == 3);
+    CHECK(object->Get("key6")->GetArray().at(0)->As<std::string>() == "10");
+    CHECK(object->Get("key6")->GetArray().at(1)->Get("name")->As<std::string>() == "\"Aurelius\"");
+    CHECK(object->Get("key6")->GetArray().at(2)->As<std::string>() == "culture:greek");
+    
+    CHECK(object->Get("key7")->GetType() == Type::ARRAY);
+    CHECK(object->Get("key7")->GetArray().size() == 2);
+    CHECK(object->Get("key7")->GetArray().at(0)->As<std::string>() == "2025.6.2");
+    CHECK(object->Get("key7")->GetArray().at(1)->Get("name")->As<std::string>() == "\"Vespasian\"");
 }
 
 TEST_CASE("[10_comments] comments") {

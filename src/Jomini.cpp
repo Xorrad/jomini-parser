@@ -6,38 +6,60 @@ namespace Jomini {
 //                  Jomini Objects                      //
 //////////////////////////////////////////////////////////
 
-Object::Object() {}
+Flags operator|(Flags a, Flags b) {
+    return static_cast<Flags>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+Flags operator&(Flags a, Flags b) {
+    return static_cast<Flags>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+Flags operator~(Flags a) {
+    return static_cast<Flags>(~static_cast<int>(a));
+}
+
+Flags& operator|=(Flags& a, Flags b) {
+    return a = a | b;
+}
+
+Flags& operator&=(Flags& a, Flags b) {
+    return a = a & b;
+}
+
+Object::Object()
+: m_Value(""), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
+{}
 
 Object::Object(int scalar)
-: m_Value(std::to_string(scalar)), m_Type(Type::SCALAR)
+: m_Value(std::to_string(scalar)), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
 
 Object::Object(double scalar)
-: m_Value(std::to_string(scalar)), m_Type(Type::SCALAR)
+: m_Value(std::to_string(scalar)), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
 
 Object::Object(bool scalar)
-: m_Value((scalar ? "yes" : "no")), m_Type(Type::SCALAR)
+: m_Value((scalar ? "yes" : "no")), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
 
 Object::Object(const std::string& scalar)
-: m_Value(scalar), m_Type(Type::SCALAR)
+: m_Value(scalar), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
 
 Object::Object(const Date& scalar)
-: m_Value((std::string) scalar), m_Type(Type::SCALAR)
+: m_Value((std::string) scalar), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
 
 Object::Object(const ObjectMap& objects)
-: m_Value(objects), m_Type(Type::OBJECT)
+: m_Value(objects), m_Type(Type::OBJECT), m_Flags(Flags::NONE)
 {}
 
 Object::Object(const ObjectArray& array)
-: m_Value(array), m_Type(Type::ARRAY)
+: m_Value(array), m_Type(Type::ARRAY), m_Flags(Flags::NONE)
 {}
 
 Object::Object(const std::variant<std::string, ObjectMap, ObjectArray>& value)
-: m_Value(value), m_Type((Type) value.index())
+: m_Value(value), m_Type((Type) value.index()), m_Flags(Flags::NONE)
 {}
 
 Object::Object(const Object& object) {
@@ -84,6 +106,23 @@ std::shared_ptr<Object> Object::Copy() const {
         return std::make_shared<Object>(array);
     }
     return nullptr;
+}
+
+Flags Object::GetFlags() const {
+    return m_Flags;
+}
+
+bool Object::HasFlag(Flags flag) const {
+    return (bool) (m_Flags & flag);
+}
+
+void Object::SetFlags(Flags flags) {
+    m_Flags = flags;
+}
+
+void Object::SetFlag(Flags flag, bool enabled) {
+    if(enabled) m_Flags |= flag;
+    else m_Flags &= (~flag);
 }
 
 void Object::ConvertToArray() {
@@ -291,7 +330,13 @@ template <> void Object::Merge(std::string key, std::shared_ptr<Object> value, O
         throw std::runtime_error("Cannot use Merge on array.");
     ObjectMap& map = std::get<ObjectMap>(m_Value);
     if (map.contains(key)) {
-        map.at(key).second->Push(value, true);
+        if (map.at(key).second->HasFlag(Flags::LIST | Flags::RANGE) && value->Is(Type::ARRAY)) {
+            for (auto v : value->GetArray())
+                map.at(key).second->Push(v, false);
+        }
+        else {
+            map.at(key).second->Push(value, true);
+        }
     }
     else {
         map.insert(key, std::make_pair(op, value));
@@ -356,6 +401,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
     std::shared_ptr<Object> mainObject = std::make_shared<Object>(OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>{});
     std::string key = "";
     Operator op = Operator::EQUAL;
+    Flags flags = Flags::NONE;
 
     #define IS_BLANK(ch) (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
     #define IS_OPERATOR(ch) (ch == '=' || ch == '<' || ch == '>' || ch == '!' || ch == '?')
@@ -536,18 +582,24 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             state = 4;
         }
         // State #3a: parsing object value.
-        //  - from: state #2a
+        //  - from: state #2a, state #3b
         //  - next: state #1
         //  - accepts: {
         else if (state == 3 && ch == '{') {
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            // Empty object are by default all map objects, so if there is
+            // a list flags attached, the convert it to an array.
+            if (object->Is(Type::OBJECT) && ((bool) (flags & (Flags::LIST | Flags::RANGE))))
+                object->ConvertToArray();
             mainObject->Merge(key, object, op);
+            mainObject->Get(key)->SetFlag(flags, true);
+            flags = Flags::NONE;
             key = "";
             state = 1;
         }
         // State #3b: parsing scalar value.
-        //  - from: state #2a
-        //  - next: state #1
+        //  - from: state #2a, state #3b
+        //  - next: state #1, state #3
         //  - accepts: non-blank, non-operator
         else if (state == 3) {
             if (IS_OPERATOR(ch))
@@ -555,9 +607,22 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             if (IS_BRACKET(ch))
                 throw std::runtime_error("Failed to parse bracket in state #3b");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
-            mainObject->Merge(key, std::make_shared<Object>(buffer), op);
-            key = "";
-            state = 1;
+            // Check if the value correspond to an array flag.
+            if (buffer == "rgb")
+                flags = Flags::RGB;
+            else if (buffer == "hsv")
+                flags = Flags::HSV;
+            else if (buffer == "LIST")
+                flags = Flags::LIST;
+            else if (buffer == "RANGE")
+                flags = Flags::RANGE;
+            else {
+                mainObject->Merge(key, std::make_shared<Object>(buffer), op);
+                key = "";
+                state = 1;
+                continue;
+            }
+            state = 3;
         }
         // State #4a: stop parsing an array.
         //  - from: state #2b, state #2d
@@ -583,8 +648,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - next: state #4
         //  - accepts: non-blank
         else if (state == 4) {
+            if (IS_OPERATOR(ch))
+                throw std::runtime_error("Failed to parse operator in state #4c");
             if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #4b");
+                throw std::runtime_error("Failed to parse bracket in state #4c");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             mainObject->Push(buffer);
             state = 4;

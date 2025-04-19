@@ -232,6 +232,20 @@ namespace Jomini {
         { Operator::NOT_NULL, "?=" },
     };
 
+    enum class Flags {
+        NONE  = 0,
+        RGB   = 1 << 0,
+        HSV   = 1 << 1,
+        LIST  = 1 << 2,
+        RANGE = 1 << 3,
+    };
+    
+    Flags operator|(Flags a, Flags b);
+    Flags operator&(Flags a, Flags b);
+    Flags operator~(Flags a);
+    Flags& operator|=(Flags& a, Flags b);
+    Flags& operator&=(Flags& a, Flags b);
+
     using ObjectMap = OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>;
     using ObjectArray = std::vector<std::shared_ptr<Object>>;
 
@@ -254,6 +268,11 @@ namespace Jomini {
             bool Is(Type type) const;
             std::shared_ptr<Object> Copy() const;
 
+            Flags GetFlags() const;
+            bool HasFlag(Flags flag) const;
+            void SetFlags(Flags flags);
+            void SetFlag(Flags flag, bool enabled);
+
             void ConvertToArray();
             void ConvertToObject();
 
@@ -265,7 +284,7 @@ namespace Jomini {
             Operator GetOperator(const std::string& key);
             
             template <typename T> void Push(T value, bool convertToArray = false);
-            
+
             template <typename T> void Put(std::string key, T value, Operator op = Operator::EQUAL);
             template <typename T> void Merge(std::string key, T value, Operator op = Operator::EQUAL);
 
@@ -276,6 +295,7 @@ namespace Jomini {
         private:
             std::variant<std::string, ObjectMap, ObjectArray> m_Value;
             Type m_Type;
+            Flags m_Flags;
     };
     
     //////////////////////////////////////////////////////////

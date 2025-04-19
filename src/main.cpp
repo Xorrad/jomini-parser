@@ -253,8 +253,36 @@ TEST_CASE("[10_arrays_concatenation] concatenation of arrays") {
     CHECK(SerializeVector(object->Get("trait")->AsArray<std::string>()) == "{ education_stewardship_4 patient zealous diligent }");
 }
 
-TEST_CASE("[11_comments] comments") {
-    std::shared_ptr<Object> object = ParseFile("tests/11_comments.txt");
+TEST_CASE("[11_arrays_flags] arrays with special flags (color, range...)") {
+    std::shared_ptr<Object> object = ParseFile("tests/11_arrays_flags.txt");
+
+    CHECK(object->Get("color1")->GetType() == Type::ARRAY);
+    CHECK(object->Get("color1")->GetFlags() == Flags::RGB);
+    CHECK(object->Get("color2")->GetType() == Type::ARRAY);
+    CHECK(object->Get("color2")->GetFlags() == Flags::HSV);
+    
+    CHECK(object->Get("list1")->GetType() == Type::ARRAY);
+    CHECK(object->Get("list1")->GetFlags() == Flags::LIST);
+    CHECK(object->Get("list1")->GetArray().empty());
+    CHECK(object->Get("list2")->GetType() == Type::ARRAY);
+    CHECK(object->Get("list2")->GetFlags() == Flags::LIST);
+    CHECK(SerializeVector(object->Get("list2")->AsArray<std::string>()) == "{ 2 1 3 4 }");
+    
+    CHECK(object->Get("range1")->GetType() == Type::ARRAY);
+    CHECK(object->Get("range1")->GetFlags() == Flags::RANGE);
+    CHECK(SerializeVector(object->Get("range1")->AsArray<std::string>()) == "{ 1 2 3 4 5 }");
+    CHECK(object->Get("range2")->GetType() == Type::ARRAY);
+    CHECK(object->Get("range2")->GetFlags() == Flags::RANGE);
+    CHECK(SerializeVector(object->Get("range2")->AsArray<std::string>()) == "{ 5 4 3 2 1 }");
+    CHECK(object->Get("range3")->GetType() == Type::ARRAY);
+    CHECK(object->Get("range3")->GetFlags() == (Flags::RANGE | Flags::LIST));
+    for (auto o : object->Get("range3")->GetArray())
+        CHECK(o->GetType() == Type::SCALAR);
+    CHECK(SerializeVector(object->Get("range3")->AsArray<std::string>()) == "{ 1 2 3 4 10 2 }");
+}
+
+TEST_CASE("[12_comments] comments") {
+    std::shared_ptr<Object> object = ParseFile("tests/12_comments.txt");
 
     CHECK(object->Get("key1")->GetType() == Type::SCALAR);
     CHECK(object->Get("key1")->As<std::string>() == "value1");
@@ -266,8 +294,8 @@ TEST_CASE("[11_comments] comments") {
     CHECK(SerializeVector(object->Get("key4")->AsArray<std::string>()) == "{ v1 v2 }");
 }
 
-TEST_CASE("[12_utf8] utf8 characters") {
-    std::shared_ptr<Object> object = ParseFile("tests/12_utf8.txt");
+TEST_CASE("[13_utf8] utf8 characters") {
+    std::shared_ptr<Object> object = ParseFile("tests/13_utf8.txt");
 
     CHECK(object->Get("latin1")->GetType() == Type::SCALAR);
     CHECK(object->Get("latin1")->As<std::string>() == "éàâêëïîôöäüûù");

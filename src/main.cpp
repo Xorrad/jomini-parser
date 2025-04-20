@@ -481,3 +481,14 @@ TEST_CASE("[27_exceptions_unexpected_range_flag.txt] unexpected range flag for o
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/27_exceptions_unexpected_range_flag.txt:3:1: error: expected 2-number-array in RANGE block\n\t1 | key = RANGE {\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | expected 2 numbers");
     }
 }
+
+TEST_CASE("[28_exceptions_unexpected_operator.txt] unexpected operator after operator") {
+    CHECK_THROWS_AS(ParseFile("tests/28_exceptions_unexpected_operator.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/28_exceptions_unexpected_operator.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/28_exceptions_unexpected_operator.txt:1:7: error: unexpected '=' after operator inside key-value block\n\t1 | key = =\n\t  |       ^\n\t  |       |\n\t  |       unexpected operator");
+    }
+}

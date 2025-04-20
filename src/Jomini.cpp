@@ -765,7 +765,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: }
         else if (state == 4 && ch == '}') {
             if (depth == 0)
-                throw std::runtime_error("Failed to parse brace in state #4a");
+                THROW_ERROR("unexpected closing brace '}'", "unmatched closing brace", -1);
             return mainObject;
         }
         // State #4b: start parsing an object inside an array.

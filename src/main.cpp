@@ -503,3 +503,14 @@ TEST_CASE("[28_exceptions_unexpected_operator.txt] unexpected operator after ope
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/28_exceptions_unexpected_operator.txt:1:7: error: unexpected '=' after operator inside key-value block\n\t1 | key = =\n\t  |       ^\n\t  |       |\n\t  |       unexpected operator");
     }
 }
+
+TEST_CASE("[29_exceptions_array_unexpected_closing_brace.txt] unexpected closing brace at root level") {
+    CHECK_THROWS_AS(ParseFile("tests/29_exceptions_array_unexpected_closing_brace.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/29_exceptions_array_unexpected_closing_brace.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/29_exceptions_array_unexpected_closing_brace.txt:3:1: error: unexpected closing brace '}'\n\t1 | value1\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | unmatched closing brace");
+    }
+}

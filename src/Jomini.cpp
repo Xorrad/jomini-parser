@@ -787,9 +787,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: non-blank
         else if (state == 4) {
             if (IS_OPERATOR(ch))
-                throw std::runtime_error("Failed to parse operator in state #4c");
-            if (IS_BRACE(ch))
-                throw std::runtime_error("Failed to parse brace in state #4c");
+                THROW_ERROR(std::format("unexpected '{}' inside array block", (char) ch), "unexpected operator", -1);
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             mainObject->Push(buffer);
             state = 4;

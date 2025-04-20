@@ -514,3 +514,14 @@ TEST_CASE("[29_exceptions_array_unexpected_closing_brace.txt] unexpected closing
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/29_exceptions_array_unexpected_closing_brace.txt:3:1: error: unexpected closing brace '}'\n\t1 | value1\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | unmatched closing brace");
     }
 }
+
+TEST_CASE("[30_exceptions_array_unexpected_operator.txt] unexpected operator in array") {
+    CHECK_THROWS_AS(ParseFile("tests/30_exceptions_array_unexpected_operator.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/30_exceptions_array_unexpected_operator.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/30_exceptions_array_unexpected_operator.txt:4:4: error: unexpected '=' inside array block\n\t1 | key = {\n\t  | ...\n\t4 |    = \n\t  |    ^\n\t  |    |\n\t  |    unexpected operator");
+    }
+}

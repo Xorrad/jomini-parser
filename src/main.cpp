@@ -393,3 +393,14 @@ TEST_CASE("[19_exceptions_object_expected_closing_brace] expected closing brace 
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/19_exceptions_object_expected_closing_brace.txt:1:12: error: expected closing brace '}'\n\t1 | value1 = {\n\t  |            ^\n\t  |            |\n\t  |            unmatched closing brace");
     }
 }
+
+TEST_CASE("[20_exceptions_object_unexpected_opening_brace] unexpected opening brace inside object") {
+    CHECK_THROWS_AS(ParseFile("tests/20_exceptions_object_unexpected_opening_brace.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/20_exceptions_object_unexpected_opening_brace.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/20_exceptions_object_unexpected_opening_brace.txt:3:5: error: unexpected opening brace '{' inside key-value block\n\t1 | key = {\n\t  | ...\n\t3 |     {\n\t  |     ^\n\t  |     |\n\t  |     stray opening brace");
+    }
+}

@@ -661,7 +661,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: {
         else if (state == 2 && ch == '{') {
             if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
-                throw std::runtime_error("Failed to parse object in state #2b");
+                THROW_ERROR("unexpected opening brace '{' inside key-value block; expected operator", "stray opening brace; did you mean '='?", -1);
             int lastBrace = m_CurrentLine;
             m_LastBraceLine = m_CurrentLine;
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);

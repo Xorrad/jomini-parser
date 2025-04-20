@@ -437,3 +437,14 @@ TEST_CASE("[23_exceptions_unexpected_question_mark.txt] unexpected question mark
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/23_exceptions_unexpected_question_mark.txt:2:9: error: unexpected token '?'\n\t1 | key = {\n\t2 |     key ? value\n\t  |         ^\n\t  |         |\n\t  |         unexpected question mark; did you mean '?='?");
     }
 }
+
+TEST_CASE("[24_exceptions_object_expected_operator.txt] expected operator after key inside object") {
+    CHECK_THROWS_AS(ParseFile("tests/24_exceptions_object_expected_operator.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/24_exceptions_object_expected_operator.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/24_exceptions_object_expected_operator.txt:3:10: error: unexpected opening brace '{' inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     key2 { v1 v2 }\n\t  |          ^\n\t  |          |\n\t  |          stray opening brace; did you mean '='?");
+    }
+}

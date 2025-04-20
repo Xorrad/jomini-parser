@@ -11,6 +11,8 @@
 #include <variant>
 #include <optional>
 #include <format>
+#include <string_view>
+#include <functional>
 
 namespace Jomini {
 
@@ -21,194 +23,15 @@ namespace Jomini {
     struct Date;
     struct Color;
 
-    template <typename K, typename V>
-    class OrderedMap;
+    class ObjectMap;
 
     class Object;
     class Parser;
 
     //////////////////////////////////////////////////////////
-    //           Custom Data Types (Date, Color...)         //
+    //                  Jomini Object Types                 //
     //////////////////////////////////////////////////////////
-
-    struct Date {
-        int year;
-        int month;
-        int day;
     
-        Date() : year(0), month(0), day(0) {}
-        Date(int y, int m, int d) : year(y), month(m), day(d) {}
-    
-        Date(const std::string& str) {
-            size_t dot1 = str.find('.');
-            if (dot1 == std::string::npos || dot1 == 0)
-                throw std::invalid_argument("Invalid date format.");
-
-            size_t dot2 = str.find('.', dot1 + 1);
-            if (dot2 == std::string::npos || dot2 == dot1 + 1 || dot2 == str.length() - 1)
-                throw std::invalid_argument("Invalid date format.");
-
-            try {
-                year = std::stoi(str.substr(0, dot1));
-            }
-            catch (std::exception& e) {
-                throw std::invalid_argument("Invalid year number format.");
-            }
-
-            try {
-                month = std::stoi(str.substr(dot1 + 1, dot2 - dot1));
-            }
-            catch (std::exception& e) {
-                throw std::invalid_argument("Invalid month number format.");
-            }
-            
-            try {
-                day = std::stoi(str.substr(dot2 + 1, str.length() - dot2));
-            }
-            catch (std::exception& e) {
-                throw std::invalid_argument("Invalid day number format.");
-            }
-        }
-    
-        operator std::string() const {
-            return std::to_string(year) + "." + std::to_string(month) + "." + std::to_string(day);
-        }
-        
-        bool operator ==(const Date& other) const {
-            return year == other.year && month == other.month && day == other.day;
-        }
-        
-        bool operator <=(const Date& other) const {
-            return !(*this > other);
-        }
-        
-        bool operator >=(const Date& other) const {
-            return !(*this < other);
-        }
-    
-        bool operator <(const Date& other) const {
-            return year < other.year
-                || (year == other.year && month < other.month)
-                || (year == other.year && month == other.month && day < other.day);
-        }
-        
-        bool operator >(const Date& other) const {
-            return year > other.year
-                || (year == other.year && month > other.month)
-                || (year == other.year && month == other.month && day > other.day);
-        }
-    };
-
-    //////////////////////////////////////////////////////////
-    //                     Utilities                        //
-    //////////////////////////////////////////////////////////
-
-    template <typename K, typename V>
-    class OrderedMap {
-        public:
-            OrderedMap() {}
-
-            OrderedMap(const std::map<K, V>& entries) {
-                m_Items.resize(entries.size());
-                for (auto [key, value] : entries)
-                    this->insert(key, value);
-            }
-            
-            ~OrderedMap() {}
-
-            void insert(const K& key, const V& value) {
-                if (m_Index.find(key) == m_Index.end()) {
-                    m_Items.emplace_back(key, value);
-                    m_Index[key] = --m_Items.end();
-                } else {
-                    m_Index[key]->second = value;
-                }
-            }
-
-            V& at(const K& key) {
-                if (m_Index.find(key) == m_Index.end()) {
-                    throw std::out_of_range("key not found");
-                }
-                return m_Index[key]->second;
-            }
-
-            V& operator[](const K& key) {
-                if (m_Index.find(key) == m_Index.end()) {
-                    m_Items.emplace_back(key, V());
-                    m_Index[key] = --m_Items.end();
-                }
-                return m_Index[key]->second;
-            }
-
-            const V& operator[](const K& key) const {
-                static V default_value{};
-                auto it = m_Index.find(key);
-                return (it != m_Index.end()) ? it->second->second : default_value;
-            }
-
-            typename std::list<std::pair<K, V>>::iterator begin() {
-                return m_Items.begin();
-            }
-
-            typename std::list<std::pair<K, V>>::iterator end() {
-                return m_Items.end();
-            }
-
-            typename std::list<std::pair<K, V>>::const_iterator begin() const {
-                return m_Items.cbegin();
-            }
-
-            typename std::list<std::pair<K, V>>::const_iterator end() const {
-                return m_Items.cend();
-            }
-
-            std::size_t size() const {
-                return m_Items.size();
-            }
-
-            bool empty() const {
-                return m_Items.size() == 0;
-            }
-
-            void erase(const K& key) {
-                auto it = m_Index.find(key);
-                if (it != m_Index.end()) {
-                    m_Items.erase(it->second);
-                    m_Index.erase(it);
-                }
-            }
-
-            typename std::list<std::pair<K, V>>::iterator find(const K& key) {
-                auto it = m_Index.find(key);
-                return (it != m_Index.end()) ? it->second : m_Items.end();
-            }
-
-            bool contains(const K& key) const {
-                return m_Index.count(key) > 0;
-            }
-
-            std::vector<K> keys() const {
-                std::vector<K> keys;
-                for (auto [key, value] : m_Items)
-                    keys.push_back(key);
-                return keys;
-            }
-
-            void clear() {
-                m_Items.clear();
-                m_Index.clear();
-            }
-
-        private:
-            using ListIterator = typename std::list<std::pair<K, V>>::iterator;
-            std::list<std::pair<K, V>> m_Items;
-            std::map<K, ListIterator> m_Index;
-    };
-
-    //////////////////////////////////////////////////////////
-    //                  Jomini Objects                      //
-    //////////////////////////////////////////////////////////
-
     enum class Type {
         SCALAR,
         OBJECT,
@@ -247,8 +70,86 @@ namespace Jomini {
     Flags operator~(Flags a);
     Flags& operator|=(Flags& a, Flags b);
     Flags& operator&=(Flags& a, Flags b);
+    
+    //////////////////////////////////////////////////////////
+    //           Custom Data Types (Date, Color...)         //
+    //////////////////////////////////////////////////////////
 
-    using ObjectMap = OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>;
+    struct Date {
+        int year;
+        int month;
+        int day;
+    
+        Date();
+        Date(int y, int m, int d);
+        Date(const std::string& str);
+    
+        operator std::string() const;
+        
+        bool operator ==(const Date& other) const;
+        bool operator <=(const Date& other) const;
+        bool operator >=(const Date& other) const;
+        bool operator <(const Date& other) const;
+        bool operator >(const Date& other) const;
+    };
+
+    //////////////////////////////////////////////////////////
+    //                 Ordered Object Map                   //
+    //////////////////////////////////////////////////////////
+
+    class ObjectMap {
+        public:
+            using Value = std::pair<Operator, std::shared_ptr<Object>>;
+            using Item = std::pair<std::string, Value>;
+            using List = std::list<Item>;
+            using Iterator = typename List::iterator;
+            using ConstIterator = typename List::const_iterator;
+            using IndexMap = std::map<std::string, Iterator, std::less<>>;
+
+            // Initialized in the source file with (EQUAL, nullptr).
+            static const Value s_DefaultValue;
+
+            // Constructors
+            ObjectMap() = default;
+            ObjectMap(const std::map<std::string, Value>& entries);
+
+            // Modifiers
+            void insert(const std::string& key, const Value& value);
+            void insert(std::string_view key, const Value& value);
+            template <typename K> void erase(const K& key);
+            void clear();
+
+            // Lookups
+            template <typename K> Value& at(const K& key);
+            template <typename K> const Value& at(const K& key) const;
+            Value& operator[](std::string_view key);
+            template <typename K> const Value& operator[](const K& key) const;
+            template <typename K> Iterator find(const K& key);
+            template <typename K> ConstIterator find(const K& key) const;
+            template <typename K> bool contains(const K& key) const;
+
+            // Iterators
+            Iterator begin();
+            Iterator end();
+            ConstIterator begin() const;
+            ConstIterator end() const;
+
+            // Miscellaneous
+            std::vector<std::string_view> keys() const;
+
+            // Sizes and states
+            std::size_t size() const;
+            bool empty() const;
+
+        private:
+            List m_Items;
+            IndexMap m_Index;
+    };
+
+    //////////////////////////////////////////////////////////
+    //                  Jomini Objects                      //
+    //////////////////////////////////////////////////////////
+
     using ObjectArray = std::vector<std::shared_ptr<Object>>;
 
     class Object {
@@ -264,6 +165,7 @@ namespace Jomini {
             Object(const std::variant<std::string, ObjectMap, ObjectArray>& value);
             Object(const Object& object);
             Object(const std::shared_ptr<Object>& object);
+            Object(const std::string_view& view);
             ~Object();
 
             Type GetType() const;
@@ -286,14 +188,14 @@ namespace Jomini {
             template <typename T> std::optional<std::vector<T>> AsArrayOpt() const;
             template <typename T> std::vector<T> AsArray(const T& defaultValue) const;
 
-            bool Contains(const std::string& key) const;
-            std::shared_ptr<Object> Get(const std::string& key);
-            Operator GetOperator(const std::string& key);
+            bool Contains(std::string_view key) const;
+            std::shared_ptr<Object> Get(std::string_view key);
+            Operator GetOperator(std::string_view key);
             
             template <typename T> void Push(T value, bool convertToArray = false);
 
-            template <typename T> void Put(std::string key, T value, Operator op = Operator::EQUAL);
-            template <typename T> void Merge(std::string key, T value, Operator op = Operator::EQUAL);
+            template <typename T> void Put(std::string_view key, T value, Operator op = Operator::EQUAL);
+            template <typename T> void Merge(std::string_view key, T value, Operator op = Operator::EQUAL);
 
             std::string& GetString();
             ObjectMap& GetMap();
@@ -306,6 +208,48 @@ namespace Jomini {
     };
     
     //////////////////////////////////////////////////////////
+    //                      Reader                          //
+    //////////////////////////////////////////////////////////
+    
+    class Reader {
+        public:
+            Reader();
+            Reader(std::string filePath);
+            ~Reader();
+
+            void OpenFile(std::string filePath);
+            void OpenString(std::string content);
+            void Open(std::istream& stream);
+
+            bool IsEmpty();
+            char Read();
+            char Peek();
+            bool Match(char expected);
+
+            std::string_view ReadUntil(const std::function<bool(char)>& predicate, bool includePrevious = false, bool includeLast = false);
+            void SkipUntil(const std::function<bool(char)>& predicate);
+
+            std::string_view GetView() const;
+            std::string_view GetLine(uint line) const;
+
+            uint GetCurrentLine() const;
+            uint GetCurrentCursor() const;
+
+        private:
+            void IncrementLine();
+
+            std::string m_Buffer;
+            std::string_view m_View;
+            std::vector<std::string_view> m_Lines;
+
+            uint m_CurrentLine;
+            uint m_CurrentCursor;
+            uint m_CurrentGlobalCursor;
+
+    };
+
+    
+    //////////////////////////////////////////////////////////
     //                      Parser                          //
     //////////////////////////////////////////////////////////
 
@@ -316,16 +260,15 @@ namespace Jomini {
             Parser();
 
             void ThrowError(const std::string& error, const std::string& cursorError, int cursorOffset, std::string sourceFile, int sourceFileLine);
-            std::vector<std::string> GetFileLines() const;
 
             std::shared_ptr<Object> ParseFile(const std::string& filePath);
             std::shared_ptr<Object> ParseString(const std::string& content);
-            std::shared_ptr<Object> Parse(std::istream& stream, int depth = 0);
-
+            
         private:
+            std::shared_ptr<Object> Parse(int depth);
+
             std::string m_FilePath;
-            int m_CurrentLine;
-            int m_CurrentCursor;
+            Reader m_Reader;
             int m_PreviousLine;
             int m_PreviousCursor;
             int m_LastBraceLine;
@@ -333,5 +276,4 @@ namespace Jomini {
 
     std::shared_ptr<Object> ParseFile(const std::string& filePath);
     std::shared_ptr<Object> ParseString(const std::string& content);
-    std::shared_ptr<Object> Parse(std::istream& stream);
 }

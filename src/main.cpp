@@ -335,7 +335,7 @@ TEST_CASE("[14_exceptions_missing_value] value missing after key and operator") 
         ParseFile("tests/14_exceptions_missing_value.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/14_exceptions_missing_value.txt:1:6: error: expected a value after '='\n\t1 | key =\n\t  |      ^\n\t  |      |\n\t  |      missing value");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/14_exceptions_missing_value.txt:1:6: error: expected a value after '='\n\t1 | key =\n\t  |      ^\n\t  |      |\n\t  |      missing value");
     }
 }
 
@@ -346,7 +346,7 @@ TEST_CASE("[15_exceptions_missing_operator] operator missing after key") {
         ParseFile("tests/15_exceptions_missing_operator.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/15_exceptions_missing_operator.txt:1:4: error: expected an operator after 'key'\n\t1 | key\n\t  |    ^\n\t  |    |\n\t  |    missing operator");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/15_exceptions_missing_operator.txt:1:4: error: expected an operator after 'key'\n\t1 | key\n\t  |    ^\n\t  |    |\n\t  |    missing operator");
     }
 }
 
@@ -379,7 +379,7 @@ TEST_CASE("[17_exceptions_root_standalone_array] standalone array at root level"
         ParseFile("tests/17_exceptions_root_standalone_array.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/17_exceptions_root_standalone_array.txt:2:1: error: unexpected array at root level\n\t1 | value1\n\t2 | value2\n\t  | ^\n\t  | |\n\t  | unexpected standalone value");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/17_exceptions_root_standalone_array.txt:2:1: error: unexpected array at root level\n\t1 | value1\n\t2 | value2\n\t  | ^\n\t  | |\n\t  | unexpected standalone value");
     }
 }
 
@@ -390,7 +390,7 @@ TEST_CASE("[18_exceptions_array_expected_closing_brace] expected closing brace f
         ParseFile("tests/18_exceptions_array_expected_closing_brace.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/18_exceptions_array_expected_closing_brace.txt:2:21: error: expected closing brace '}'\n\t2 |     { value1 value2\n\t  |                     ^\n\t  |                     |\n\t  |                     unmatched closing brace");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/18_exceptions_array_expected_closing_brace.txt:2:21: error: expected closing brace '}'\n\t2 |     { value1 value2\n\t  |                     ^\n\t  |                     |\n\t  |                     unmatched closing brace");
     }
 }
 
@@ -401,7 +401,7 @@ TEST_CASE("[19_exceptions_object_expected_closing_brace] expected closing brace 
         ParseFile("tests/19_exceptions_object_expected_closing_brace.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/19_exceptions_object_expected_closing_brace.txt:1:12: error: expected closing brace '}'\n\t1 | value1 = {\n\t  |            ^\n\t  |            |\n\t  |            unmatched closing brace");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/19_exceptions_object_expected_closing_brace.txt:1:12: error: expected closing brace '}'\n\t1 | value1 = {\n\t  |            ^\n\t  |            |\n\t  |            unmatched closing brace");
     }
 }
 
@@ -423,7 +423,7 @@ TEST_CASE("[21_exceptions_missing_key] missing key before operator inside object
         ParseFile("tests/21_exceptions_missing_key.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/21_exceptions_missing_key.txt:2:6: error: expected key before '='\n\t1 | key = {\n\t2 |     = \"value\"\n\t  |      ^\n\t  |      |\n\t  |      missing key");
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/21_exceptions_missing_key.txt:2:5: error: expected key before '='\n\t1 | key = {\n\t2 |     = \"value\"\n\t  |     ^\n\t  |     |\n\t  |     missing key");
     }
 }
 
@@ -511,7 +511,7 @@ TEST_CASE("[29_exceptions_array_unexpected_closing_brace.txt] unexpected closing
         ParseFile("tests/29_exceptions_array_unexpected_closing_brace.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/29_exceptions_array_unexpected_closing_brace.txt:3:1: error: unexpected closing brace '}'\n\t1 | value1\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | unmatched closing brace");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/29_exceptions_array_unexpected_closing_brace.txt:3:1: error: unexpected closing brace '}'\n\t1 | value1\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | unmatched closing brace");
     }
 }
 
@@ -522,6 +522,6 @@ TEST_CASE("[30_exceptions_array_unexpected_operator.txt] unexpected operator in 
         ParseFile("tests/30_exceptions_array_unexpected_operator.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/30_exceptions_array_unexpected_operator.txt:4:4: error: unexpected '=' inside array block\n\t1 | key = {\n\t  | ...\n\t4 |    = \n\t  |    ^\n\t  |    |\n\t  |    unexpected operator");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/30_exceptions_array_unexpected_operator.txt:4:4: error: unexpected '=' inside array block\n\t1 | key = {\n\t  | ...\n\t4 |    = \n\t  |    ^\n\t  |    |\n\t  |    unexpected operator");
     }
 }

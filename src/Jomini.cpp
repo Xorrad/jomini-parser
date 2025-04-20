@@ -465,6 +465,7 @@ std::vector<std::string> Parser::GetFileLines() const {
     std::string line;
     while (std::getline(file, line))
         lines.push_back(line);
+    file.close();
     return lines;
 }
 

@@ -404,3 +404,14 @@ TEST_CASE("[20_exceptions_object_unexpected_opening_brace] unexpected opening br
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/20_exceptions_object_unexpected_opening_brace.txt:3:5: error: unexpected opening brace '{' inside key-value block\n\t1 | key = {\n\t  | ...\n\t3 |     {\n\t  |     ^\n\t  |     |\n\t  |     stray opening brace");
     }
 }
+
+TEST_CASE("[21_exceptions_missing_key] missing key before operator inside object") {
+    CHECK_THROWS_AS(ParseFile("tests/21_exceptions_missing_key.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/21_exceptions_missing_key.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/21_exceptions_missing_key.txt:2:6: error: expected key before '='\n\t1 | key = {\n\t2 |     = \"value\"\n\t  |      ^\n\t  |      |\n\t  |      missing key");
+    }
+}

@@ -593,7 +593,6 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         else if (state == 1 && ch == '{') {
             if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
                 THROW_ERROR("unexpected opening brace '{' inside key-value block", "stray opening brace", -1);
-                // throw std::runtime_error("Failed to parse object in state #2b");
             int lastBrace = m_CurrentLine;
             m_LastBraceLine = m_CurrentLine;
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
@@ -608,7 +607,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: non-blank, non-operator, non-brace
         else if (state == 1) {
             if (IS_OPERATOR(ch))
-                throw std::runtime_error("Failed to parse operator in state #1c");
+                THROW_ERROR(std::format("expected key before '{}'", OperatorsLabels.at(op)), "missing key", 0);
             if (IS_BRACE(ch))
                 throw std::runtime_error("Failed to parse brace in state #1c");
             key = std::string(1, ch) + CaptureTillBlank(ch == '"');

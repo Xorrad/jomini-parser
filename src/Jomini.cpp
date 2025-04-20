@@ -408,7 +408,7 @@ ObjectArray& Object::GetArray() {
 //////////////////////////////////////////////////////////
 
 Parser::Parser()
-: m_FilePath(""), m_CurrentLine(0), m_CurrentCursor(0)
+: m_FilePath(""), m_CurrentLine(0), m_CurrentCursor(0), m_PreviousLine(0), m_PreviousCursor(0), m_LastBraceLine(0)
 {}
 
 void Parser::ThrowError(const std::string& error, const std::string& cursorError, int cursorOffset, std::string sourceFile, int sourceFileLine) {
@@ -423,19 +423,32 @@ void Parser::ThrowError(const std::string& error, const std::string& cursorError
     message += std::format(
         "{}:{}:{}: error: {}\n",
         m_FilePath,
-        m_CurrentLine+1,
-        std::max(1, m_CurrentCursor+cursorOffset+1),
+        m_PreviousLine+1,
+        std::max(1, m_PreviousCursor+cursorOffset+1),
         error
     );
 
-    std::string tab1 = std::string(std::to_string(m_CurrentLine).length(), ' ');
-    std::string tab2 = std::string(std::max(0, m_CurrentCursor+cursorOffset), ' ');
+    std::string tab1 = std::string(std::to_string(m_PreviousLine).length(), ' ');
+    std::string tab2 = std::string(std::max(0, m_PreviousCursor+cursorOffset), ' ');
+
+    // Add the last line with an opening brace if relevent to the exception.
+    if (m_LastBraceLine != m_PreviousLine) {
+        message += std::format(
+            "\t{} | {}\n",
+            m_LastBraceLine+1, lines.at(m_LastBraceLine)
+        );
+
+        if (m_LastBraceLine != m_PreviousLine-1)
+            message += std::format("\t{} | ...\n", tab1);
+    }
+    
+    // Add the last relevent line and the error arrow.
     message += std::format(
         "\t{} | {}\n"
         "\t{} | {}^\n"
         "\t{} | {}|\n"
         "\t{} | {}{}",
-        m_CurrentLine+1, lines.at(m_CurrentLine),
+        m_PreviousLine+1, lines.at(m_PreviousLine),
         tab1, tab2,
         tab1, tab2,
         tab1, tab2, cursorError
@@ -475,6 +488,8 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
     if (depth == 0) {
         m_CurrentLine = 0;
         m_CurrentCursor = 0;
+        m_PreviousLine = 0;
+        m_PreviousCursor = 0;
     }
 
     // Initialize the main object, key and operator.
@@ -559,6 +574,9 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             continue;
         }
 
+        m_PreviousLine = m_CurrentLine;
+        m_PreviousCursor = m_CurrentCursor;
+
         // State #1a: stop reading return the current main object.
         //  - from: initial, state #3
         //  - next: terminal
@@ -575,7 +593,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         else if (state == 1 && ch == '{') {
             if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
                 throw std::runtime_error("Failed to parse object in state #2b");
+            int lastBrace = m_CurrentLine;
+            m_LastBraceLine = m_CurrentLine;
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            m_LastBraceLine = lastBrace;
             mainObject->Push(object, true);
             key = "";
             state = 4;
@@ -643,7 +664,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         else if (state == 2 && ch == '{') {
             if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
                 throw std::runtime_error("Failed to parse object in state #2b");
+            int lastBrace = m_CurrentLine;
+            m_LastBraceLine = m_CurrentLine;
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            m_LastBraceLine = lastBrace;
             mainObject->Push(key, true);
             mainObject->Push(object);
             key = "";
@@ -679,7 +703,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - next: state #1
         //  - accepts: {
         else if (state == 3 && ch == '{') {
+            int lastBrace = m_CurrentLine;
+            m_LastBraceLine = m_CurrentLine;
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            m_LastBraceLine = lastBrace;
 
             // Empty object are by default all map objects, so if there is
             // a list flags attached, the convert it to an array.
@@ -749,7 +776,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - next: state #4
         //  - accepts: {
         else if (state == 4 && ch == '{') {
+            int lastBrace = m_CurrentLine;
+            m_LastBraceLine = m_CurrentLine;
             std::shared_ptr<Object> object = this->Parse(stream, depth+1);
+            m_LastBraceLine = lastBrace;
             mainObject->Push(object);
             key = "";
             state = 4;
@@ -767,6 +797,11 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             mainObject->Push(buffer);
             state = 4;
         }
+
+        // Update the previous line and cursor number to take into account
+        // strings and operators that have been read in the states.
+        m_PreviousLine = m_CurrentLine;
+        m_PreviousCursor = m_CurrentCursor;
     }
 
     if (depth == 0 && mainObject->Is(Type::SCALAR))

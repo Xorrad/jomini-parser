@@ -368,7 +368,7 @@ TEST_CASE("[17_exceptions_root_standalone_array] standalone array at root level"
         ParseFile("tests/17_exceptions_root_standalone_array.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/17_exceptions_root_standalone_array.txt:2:1: error: unexpected array at root level\n\t2 | value2\n\t  | ^\n\t  | |\n\t  | unexpected standalone value");
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/17_exceptions_root_standalone_array.txt:2:1: error: unexpected array at root level\n\t1 | value1\n\t2 | value2\n\t  | ^\n\t  | |\n\t  | unexpected standalone value");
     }
 }
 

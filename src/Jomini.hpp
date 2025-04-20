@@ -326,6 +326,9 @@ namespace Jomini {
             std::string m_FilePath;
             int m_CurrentLine;
             int m_CurrentCursor;
+            int m_PreviousLine;
+            int m_PreviousCursor;
+            int m_LastBraceLine;
     };
 
     std::shared_ptr<Object> ParseFile(const std::string& filePath);

@@ -604,12 +604,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         // State #1c: parsing key.
         //  - from: initial, state #3
         //  - next: state #2
-        //  - accepts: non-blank, non-operator, non-brace
+        //  - accepts: non-blank, non-operator
         else if (state == 1) {
             if (IS_OPERATOR(ch))
                 THROW_ERROR(std::format("expected key before '{}'", OperatorsLabels.at(op)), "missing key", 0);
-            if (IS_BRACE(ch))
-                throw std::runtime_error("Failed to parse brace in state #1c");
             key = std::string(1, ch) + CaptureTillBlank(ch == '"');
             state = 2;
         }
@@ -619,9 +617,9 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: =, <, >, !, ?
         else if (state == 2 && IS_OPERATOR(ch)) {
             if (ch == '!' && stream.peek() != '=')
-                throw std::runtime_error("Failed to parse NOT operator in state #2a");
+                THROW_ERROR("unexpected token '!'", "unexpected exclamation mark; did you mean '!='?", -1);
             if (ch == '?' && stream.peek() != '=')
-                throw std::runtime_error("Failed to parse NOT_NULL operator in state #2a");
+                THROW_ERROR("unexpected token '?'", "unexpected question mark; did you mean '?='?", -1);
             switch (ch) {
                 case '=':
                     op = Operator::EQUAL;

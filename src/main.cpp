@@ -415,3 +415,25 @@ TEST_CASE("[21_exceptions_missing_key] missing key before operator inside object
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/21_exceptions_missing_key.txt:2:6: error: expected key before '='\n\t1 | key = {\n\t2 |     = \"value\"\n\t  |      ^\n\t  |      |\n\t  |      missing key");
     }
 }
+
+TEST_CASE("[22_exceptions_unexpected_exclamation_mark.txt] unexpected exclamation mark after key") {
+    CHECK_THROWS_AS(ParseFile("tests/22_exceptions_unexpected_exclamation_mark.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/22_exceptions_unexpected_exclamation_mark.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/22_exceptions_unexpected_exclamation_mark.txt:2:9: error: unexpected token '!'\n\t1 | key = {\n\t2 |     key ! value\n\t  |         ^\n\t  |         |\n\t  |         unexpected exclamation mark; did you mean '!='?");
+    }
+}
+
+TEST_CASE("[23_exceptions_unexpected_question_mark.txt] unexpected question mark after key") {
+    CHECK_THROWS_AS(ParseFile("tests/23_exceptions_unexpected_question_mark.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/23_exceptions_unexpected_question_mark.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/23_exceptions_unexpected_question_mark.txt:2:9: error: unexpected token '?'\n\t1 | key = {\n\t2 |     key ? value\n\t  |         ^\n\t  |         |\n\t  |         unexpected question mark; did you mean '?='?");
+    }
+}

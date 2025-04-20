@@ -350,13 +350,46 @@ TEST_CASE("[15_exceptions_missing_operator] operator missing after key") {
     }
 }
 
-TEST_CASE("[16_exceptions_unmatched_closing_bracket] unexpected closing bracket after value") {
-    CHECK_THROWS_AS(ParseFile("tests/16_exceptions_unmatched_closing_bracket.txt"), std::runtime_error);
+TEST_CASE("[16_exceptions_unexpected_closing_brace] unexpected closing brace after value") {
+    CHECK_THROWS_AS(ParseFile("tests/16_exceptions_unexpected_closing_brace.txt"), std::runtime_error);
 
     try {
-        ParseFile("tests/16_exceptions_unmatched_closing_bracket.txt");
+        ParseFile("tests/16_exceptions_unexpected_closing_brace.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unmatched_closing_bracket.txt:1:13: error: unexpected closing brace '}'\n\t1 | key = value }\n\t  |             ^\n\t  |             |\n\t  |             unmatched closing brace");
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unexpected_closing_brace.txt:1:13: error: unexpected closing brace '}'\n\t1 | key = value }\n\t  |             ^\n\t  |             |\n\t  |             unmatched closing brace");
+    }
+}
+
+TEST_CASE("[17_exceptions_root_standalone_array] standalone array at root level") {
+    CHECK_THROWS_AS(ParseFile("tests/17_exceptions_root_standalone_array.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/17_exceptions_root_standalone_array.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/17_exceptions_root_standalone_array.txt:2:1: error: unexpected array at root level\n\t2 | value2\n\t  | ^\n\t  | |\n\t  | unexpected standalone value");
+    }
+}
+
+TEST_CASE("[18_exceptions_array_expected_closing_brace] expected closing brace for array") {
+    CHECK_THROWS_AS(ParseFile("tests/18_exceptions_array_expected_closing_brace.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/18_exceptions_array_expected_closing_brace.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/18_exceptions_array_expected_closing_brace.txt:2:21: error: expected closing brace '}'\n\t2 |     { value1 value2\n\t  |                     ^\n\t  |                     |\n\t  |                     unmatched closing brace");
+    }
+}
+
+TEST_CASE("[19_exceptions_object_expected_closing_brace] expected closing brace for object") {
+    CHECK_THROWS_AS(ParseFile("tests/19_exceptions_object_expected_closing_brace.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/19_exceptions_object_expected_closing_brace.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/19_exceptions_object_expected_closing_brace.txt:1:12: error: expected closing brace '}'\n\t1 | value1 = {\n\t  |            ^\n\t  |            |\n\t  |            unmatched closing brace");
     }
 }

@@ -480,14 +480,14 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
     // Initialize the main object, key and operator.
     // Depending on what is read, the object can be an scalar, an object (map) or an array.
     // Key and operator are not used if it isn't parsing a map object.
-    std::shared_ptr<Object> mainObject = std::make_shared<Object>(OrderedMap<std::string, std::pair<Operator, std::shared_ptr<Object>>>{});
+    std::shared_ptr<Object> mainObject = std::make_shared<Object>(ObjectMap{});
     std::string key = "";
     Operator op = Operator::EQUAL;
     Flags flags = Flags::NONE;
 
     #define IS_BLANK(ch) (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
     #define IS_OPERATOR(ch) (ch == '=' || ch == '<' || ch == '>' || ch == '!' || ch == '?')
-    #define IS_BRACKET(ch) (ch == '{' || ch == '}')
+    #define IS_BRACE(ch) (ch == '{' || ch == '}')
     #define IS_COMMENT(ch) (ch == '#')
 
     // Read characters from the stream until the end of the string
@@ -513,8 +513,8 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             }
             // Otherwise:
             // - Keep capturing until first blank character
-            //   comment, operator or bracket (all excluded).
-            else if (IS_BLANK(stream.peek()) || IS_OPERATOR(stream.peek()) || IS_BRACKET(stream.peek()) || IS_COMMENT(stream.peek())) {
+            //   comment, operator or braces (all excluded).
+            else if (IS_BLANK(stream.peek()) || IS_OPERATOR(stream.peek()) || IS_BRACE(stream.peek()) || IS_COMMENT(stream.peek())) {
                 break;
             }
             else {
@@ -583,12 +583,12 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         // State #1c: parsing key.
         //  - from: initial, state #3
         //  - next: state #2
-        //  - accepts: non-blank, non-operator, non-bracket
+        //  - accepts: non-blank, non-operator, non-brace
         else if (state == 1) {
             if (IS_OPERATOR(ch))
                 throw std::runtime_error("Failed to parse operator in state #1c");
-            if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #1c");
+            if (IS_BRACE(ch))
+                throw std::runtime_error("Failed to parse brace in state #1c");
             key = std::string(1, ch) + CaptureTillBlank(ch == '"');
             state = 2;
         }
@@ -664,8 +664,8 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - next: state #4
         //  - accepts: non-blank
         else if (state == 2) {
-            if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #2d");
+            if (IS_BRACE(ch))
+                throw std::runtime_error("Failed to parse brace in state #2d");
             if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
                 throw std::runtime_error("Failed to parse object in state #2d");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
@@ -715,8 +715,8 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         else if (state == 3) {
             if (IS_OPERATOR(ch))
                 throw std::runtime_error("Failed to parse operator in state #3b");
-            if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #3b");
+            if (IS_BRACE(ch))
+                throw std::runtime_error("Failed to parse brace in state #3b");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             // Check if the value correspond to an array flag.
             if (buffer == "rgb")
@@ -741,7 +741,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: }
         else if (state == 4 && ch == '}') {
             if (depth == 0)
-                throw std::runtime_error("Failed to parse bracket in state #4a");
+                throw std::runtime_error("Failed to parse brace in state #4a");
             return mainObject;
         }
         // State #4b: start parsing an object inside an array.
@@ -761,18 +761,27 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         else if (state == 4) {
             if (IS_OPERATOR(ch))
                 throw std::runtime_error("Failed to parse operator in state #4c");
-            if (IS_BRACKET(ch))
-                throw std::runtime_error("Failed to parse bracket in state #4c");
+            if (IS_BRACE(ch))
+                throw std::runtime_error("Failed to parse brace in state #4c");
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             mainObject->Push(buffer);
             state = 4;
         }
     }
 
+    if (depth == 0 && mainObject->Is(Type::SCALAR))
+        THROW_ERROR("unexpected value at root level", "unexpected standalone value", -INT_MAX);
+    if (depth == 0 && mainObject->Is(Type::ARRAY))
+        THROW_ERROR("unexpected array at root level", "unexpected standalone value", -INT_MAX);
+
     if (!key.empty() && state == 3)
         THROW_ERROR(std::format("expected a value after '{}'", OperatorsLabels.at(op)), "missing value", 0);
     if (!key.empty() && state == 2)
         THROW_ERROR(std::format("expected an operator after '{}'", key), "missing operator", 0);
+    if (state == 4)
+        THROW_ERROR("expected closing brace '}'", "unmatched closing brace", 1);
+    if (depth > 0 && mainObject->Is(Type::OBJECT))
+        THROW_ERROR("expected closing brace '}'", "unmatched closing brace", 1);
 
     return mainObject;
 }

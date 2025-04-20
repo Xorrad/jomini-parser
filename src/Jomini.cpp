@@ -677,7 +677,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - accepts: }
         else if (state == 2 && ch == '}') {
             if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
-                throw std::runtime_error("Failed to parse object in state #2c");
+                THROW_ERROR("unexpected closing brace '}'; expected '=' or another operator", "unexpected closing brace; did you mean '='?", -1);
             mainObject->Push(key, true);
             return mainObject;
         }

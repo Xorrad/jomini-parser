@@ -448,3 +448,14 @@ TEST_CASE("[24_exceptions_object_expected_operator.txt] expected operator after 
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/24_exceptions_object_expected_operator.txt:3:10: error: unexpected opening brace '{' inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     key2 { v1 v2 }\n\t  |          ^\n\t  |          |\n\t  |          stray opening brace; did you mean '='?");
     }
 }
+
+TEST_CASE("[25_exceptions_object_unexpected_closing_brace.txt] unexpected closing brace after key") {
+    CHECK_THROWS_AS(ParseFile("tests/25_exceptions_object_unexpected_closing_brace.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/25_exceptions_object_unexpected_closing_brace.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/25_exceptions_object_unexpected_closing_brace.txt:4:1: error: unexpected closing brace '}'; expected '=' or another operator\n\t1 | key = {\n\t  | ...\n\t4 | }\n\t  | ^\n\t  | |\n\t  | unexpected closing brace; did you mean '='?");
+    }
+}

@@ -740,7 +740,7 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             if (IS_OPERATOR(ch))
                 THROW_ERROR(std::format("unexpected '{}' after operator inside key-value block", (char) ch), "unexpected operator", -1);
             if (IS_BRACE(ch))
-                throw std::runtime_error("Failed to parse brace in state #3b");
+                THROW_ERROR("unexpected closing brace '}' after operator inside key-value block", "unexpected closing brace", -1);
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             // Check if the value correspond to an array flag.
             if (buffer == "rgb")

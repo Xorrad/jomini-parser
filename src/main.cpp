@@ -361,6 +361,17 @@ TEST_CASE("[16_exceptions_unexpected_closing_brace] unexpected closing brace aft
     }
 }
 
+TEST_CASE("[16_exceptions_unexpected_closing_brace2] unexpected closing brace after operator") {
+    CHECK_THROWS_AS(ParseFile("tests/16_exceptions_unexpected_closing_brace2.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/16_exceptions_unexpected_closing_brace2.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unexpected_closing_brace2.txt:1:7: error: unexpected closing brace '}' after operator inside key-value block\n\t1 | key = }\n\t  |       ^\n\t  |       |\n\t  |       unexpected closing brace");
+    }
+}
+
 TEST_CASE("[17_exceptions_root_standalone_array] standalone array at root level") {
     CHECK_THROWS_AS(ParseFile("tests/17_exceptions_root_standalone_array.txt"), std::runtime_error);
 

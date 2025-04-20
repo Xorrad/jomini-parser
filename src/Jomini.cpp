@@ -713,10 +713,10 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
             // Convert range to an array.
             if ((bool) (flags & Flags::RANGE)) {
                 if (!object->Is(Type::ARRAY))
-                    throw std::runtime_error("Failed to parse range in state #3a");
+                    THROW_ERROR("expected 2-number-array in RANGE block", "expected array", -1);
                 ObjectArray& array = object->GetArray();
                 if (array.size() != 2 || !array.at(0)->Is(Type::SCALAR) || !array.at(1)->Is(Type::SCALAR))
-                    throw std::runtime_error("Failed to parse range in state #3a");
+                    THROW_ERROR("expected 2-number-array in RANGE block", "expected 2 numbers", -1);
                 int a = array.at(0)->As<int>();
                 int b = array.at(1)->As<int>();
                 array.clear();

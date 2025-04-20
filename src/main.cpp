@@ -470,3 +470,14 @@ TEST_CASE("[26_exceptions_object_unexpected_value.txt] unexpected value after ke
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/26_exceptions_object_unexpected_value.txt:3:12: error: unexpected value after key inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     value1 value2\n\t  |            ^\n\t  |            |\n\t  |            unexpected value");
     }
 }
+
+TEST_CASE("[27_exceptions_unexpected_range_flag.txt] unexpected range flag for object or scalar") {
+    CHECK_THROWS_AS(ParseFile("tests/27_exceptions_unexpected_range_flag.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/27_exceptions_unexpected_range_flag.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/27_exceptions_unexpected_range_flag.txt:3:1: error: expected 2-number-array in RANGE block\n\t1 | key = RANGE {\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | expected 2 numbers");
+    }
+}

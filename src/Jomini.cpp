@@ -687,10 +687,8 @@ std::shared_ptr<Object> Parser::Parse(std::istream& stream, int depth) {
         //  - next: state #4
         //  - accepts: non-blank
         else if (state == 2) {
-            if (IS_BRACE(ch))
-                throw std::runtime_error("Failed to parse brace in state #2d");
             if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
-                throw std::runtime_error("Failed to parse object in state #2d");
+                THROW_ERROR("unexpected value after key inside key-value block; expected operator", "unexpected value", -1);
             std::string buffer = std::string(1, ch) + CaptureTillBlank(ch == '"');
             mainObject->Push(key, true);
             mainObject->Push(buffer);

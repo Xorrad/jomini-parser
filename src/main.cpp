@@ -459,3 +459,14 @@ TEST_CASE("[25_exceptions_object_unexpected_closing_brace.txt] unexpected closin
         CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/25_exceptions_object_unexpected_closing_brace.txt:4:1: error: unexpected closing brace '}'; expected '=' or another operator\n\t1 | key = {\n\t  | ...\n\t4 | }\n\t  | ^\n\t  | |\n\t  | unexpected closing brace; did you mean '='?");
     }
 }
+
+TEST_CASE("[26_exceptions_object_unexpected_value.txt] unexpected value after key") {
+    CHECK_THROWS_AS(ParseFile("tests/26_exceptions_object_unexpected_value.txt"), std::runtime_error);
+
+    try {
+        ParseFile("tests/26_exceptions_object_unexpected_value.txt");
+    }
+    catch (std::exception& e) {
+        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/26_exceptions_object_unexpected_value.txt:3:12: error: unexpected value after key inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     value1 value2\n\t  |            ^\n\t  |            |\n\t  |            unexpected value");
+    }
+}

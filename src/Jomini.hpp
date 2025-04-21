@@ -197,7 +197,7 @@ namespace Jomini {
 
             template <typename T> std::vector<T> AsArray() const;
             template <typename T> std::optional<std::vector<T>> AsArrayOpt() const;
-            template <typename T> std::vector<T> AsArray(const T& defaultValue) const;
+            template <typename T> std::vector<T> AsArray(const std::vector<T>& defaultValue) const;
 
             bool Contains(std::string_view key) const;
             std::shared_ptr<Object> Get(std::string_view key);

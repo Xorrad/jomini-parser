@@ -481,7 +481,7 @@ template <typename T> std::optional<std::vector<T>> Object::AsArrayOpt() const {
     return std::nullopt;
 }
 
-template <typename T> std::vector<T> Object::AsArray(const T& defaultValue) const {
+template <typename T> std::vector<T> Object::AsArray(const std::vector<T>& defaultValue) const {
     try {
         T value = this->AsArray<T>();
         return value;

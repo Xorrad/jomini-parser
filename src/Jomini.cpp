@@ -226,7 +226,7 @@ Flags& operator&=(Flags& a, Flags b) {
 }
 
 Object::Object()
-: m_Value(""), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
+: m_Value(ObjectMap{}), m_Type(Type::OBJECT), m_Flags(Flags::NONE)
 {}
 
 Object::Object(int scalar)
@@ -530,6 +530,14 @@ template <> void Object::Push(std::shared_ptr<Object> value, bool convertToArray
         this->ConvertToArray();
     }
     std::get<ObjectArray>(m_Value).push_back(value);
+}
+
+void Object::Remove(std::string_view key) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Remove on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Remove on array.");
+    std::get<ObjectMap>(m_Value).erase(key);
 }
 
 template <typename T> void Object::Put(std::string_view key, T value, Operator op) {

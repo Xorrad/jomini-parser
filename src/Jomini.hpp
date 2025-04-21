@@ -204,6 +204,7 @@ namespace Jomini {
             Operator GetOperator(std::string_view key);
             
             template <typename T> void Push(T value, bool convertToArray = false);
+            void Remove(std::string_view key);
 
             template <typename T> void Put(std::string_view key, T value, Operator op = Operator::EQUAL);
             template <typename T> void Merge(std::string_view key, T value, Operator op = Operator::EQUAL);

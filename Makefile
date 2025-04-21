@@ -2,7 +2,7 @@ MAKEFLAGS += -j4
 
 # Compiler flags
 CXX      := g++-13
-CXXFLAGS := -std=c++20 -O0 -DDEBUG -g -pedantic-errors -Wall -Wno-format-security -Wno-sign-compare
+CXXFLAGS := -std=c++20 -pedantic-errors -Wall -Wno-format-security -Wno-sign-compare
 
 # Libraries
 LDFLAGS := -L/usr/lib -lbfd -ldw
@@ -17,6 +17,14 @@ BIN_DIR := bin
 # Common source files
 COMMON_SRC := $(SRC_DIR)/Jomini.cpp
 COMMON_OBJ := $(BIN_DIR)/Jomini.o
+
+# Build type (default, debug, release)
+BUILD_TYPE := release
+ifeq ($(BUILD_TYPE),debug)
+    CXXFLAGS += -O0 -DDEBUG -g #-fsanitize=address
+else ifeq ($(BUILD_TYPE),release)
+    CXXFLAGS += -O3 -DNDEBUG
+endif
 
 # Pattern rule for compiling object files
 $(BIN_DIR)/%.o: $(SRC_DIR)/%.cpp

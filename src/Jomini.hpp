@@ -5,6 +5,7 @@
 #include <sstream>
 #include <memory>
 #include <map>
+#include <unordered_map>
 #include <list>
 #include <utility>
 #include <fstream>
@@ -13,6 +14,7 @@
 #include <format>
 #include <string_view>
 #include <functional>
+#include <chrono>
 
 namespace Jomini {
 
@@ -97,6 +99,13 @@ namespace Jomini {
     //                 Ordered Object Map                   //
     //////////////////////////////////////////////////////////
 
+    struct StringHash {
+        using is_transparent = void; 
+        size_t operator()(const std::string& s) const { return std::hash<std::string>{}(s); }
+        size_t operator()(const char* c) const { return std::hash<std::string_view>{}(c); }
+        size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
+    };
+
     class ObjectMap {
         public:
             using Value = std::pair<Operator, std::shared_ptr<Object>>;
@@ -104,18 +113,19 @@ namespace Jomini {
             using List = std::list<Item>;
             using Iterator = typename List::iterator;
             using ConstIterator = typename List::const_iterator;
-            using IndexMap = std::map<std::string, Iterator, std::less<>>;
+            using IndexMap = std::unordered_map<std::string, Iterator, StringHash, std::equal_to<>>;
 
             // Initialized in the source file with (EQUAL, nullptr).
             static const Value s_DefaultValue;
 
             // Constructors
-            ObjectMap() = default;
-            ObjectMap(const std::map<std::string, Value>& entries);
+            ObjectMap();
+            ObjectMap(const std::unordered_map<std::string, Value>& entries);
 
             // Modifiers
             void insert(const std::string& key, const Value& value);
             void insert(std::string_view key, const Value& value);
+            void insert_missing(std::string_view key, const Value& value);
             template <typename K> void erase(const K& key);
             void clear();
 
@@ -140,6 +150,7 @@ namespace Jomini {
             // Sizes and states
             std::size_t size() const;
             bool empty() const;
+            void reserve(size_t size);
 
         private:
             List m_Items;
@@ -196,10 +207,14 @@ namespace Jomini {
 
             template <typename T> void Put(std::string_view key, T value, Operator op = Operator::EQUAL);
             template <typename T> void Merge(std::string_view key, T value, Operator op = Operator::EQUAL);
+            template <typename T> void MergeUnsafe(std::string_view key, T value, Operator op = Operator::EQUAL);
 
             std::string& GetString();
             ObjectMap& GetMap();
             ObjectArray& GetArray();
+            
+            ObjectMap& GetMapUnsafe();
+            ObjectArray& GetArrayUnsafe();
 
         private:
             std::variant<std::string, ObjectMap, ObjectArray> m_Value;
@@ -240,7 +255,6 @@ namespace Jomini {
 
             std::string m_Buffer;
             std::string_view m_View;
-            std::vector<std::string_view> m_Lines;
 
             uint m_CurrentLine;
             uint m_CurrentCursor;
@@ -263,7 +277,7 @@ namespace Jomini {
 
             std::shared_ptr<Object> ParseFile(const std::string& filePath);
             std::shared_ptr<Object> ParseString(const std::string& content);
-            
+
         private:
             std::shared_ptr<Object> Parse(int depth);
 

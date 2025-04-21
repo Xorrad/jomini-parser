@@ -31,12 +31,20 @@ int main(int argc, char** argv) {
 
 void ManualTests() {
     std::shared_ptr<Object> object = ParseFile("tests/00_tests.txt");
+    // std::cout << "keys:" << std::endl;
+    // for (auto [key, pair] : object->GetMap()) {
+    //     std::cout << key << std::endl;
+    // }
+    // std::cout << std::endl;
 
-    std::cout << "keys:" << std::endl;
-    for (auto [key, pair] : object->GetMap()) {
-        std::cout << key << std::endl;
-    }
-    std::cout << std::endl;
+    // auto start = std::chrono::high_resolution_clock::now();
+    // Parser parser;
+    // std::shared_ptr<Object> data = parser.ParseFile("tests/00_tests.txt");
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double, std::milli> duration = end - start;
+    // std::cout << std::left << std::setw(30) << "name" << std::right << std::setw(15) << "avg time" << std::endl;
+    // std::cout << "---------------------------------------------" << std::endl;
+    // std::cout << std::left << std::setw(30) << "00_tests.txt" << std::right << std::setw(15) << (std::to_string(duration.count()) + "ms") << std::endl;
 }
 
 void Benchmark() {
@@ -368,7 +376,7 @@ TEST_CASE("[16_exceptions_unexpected_closing_brace2] unexpected closing brace af
         ParseFile("tests/16_exceptions_unexpected_closing_brace2.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unexpected_closing_brace2.txt:1:7: error: unexpected closing brace '}' after operator inside key-value block\n\t1 | key = }\n\t  |       ^\n\t  |       |\n\t  |       unexpected closing brace");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/16_exceptions_unexpected_closing_brace2.txt:1:7: error: unexpected closing brace '}' after operator inside key-value block\n\t1 | key = }\n\t  |       ^\n\t  |       |\n\t  |       unexpected closing brace");
     }
 }
 
@@ -489,7 +497,7 @@ TEST_CASE("[27_exceptions_unexpected_range_flag.txt] unexpected range flag for o
         ParseFile("tests/27_exceptions_unexpected_range_flag.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/27_exceptions_unexpected_range_flag.txt:3:1: error: expected 2-number-array in RANGE block\n\t1 | key = RANGE {\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | expected 2 numbers");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/27_exceptions_unexpected_range_flag.txt:3:1: error: expected 2-number-array in RANGE block\n\t1 | key = RANGE {\n\t  | ...\n\t3 | }\n\t  | ^\n\t  | |\n\t  | expected 2 numbers");
     }
 }
 
@@ -500,7 +508,7 @@ TEST_CASE("[28_exceptions_unexpected_operator.txt] unexpected operator after ope
         ParseFile("tests/28_exceptions_unexpected_operator.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/28_exceptions_unexpected_operator.txt:1:7: error: unexpected '=' after operator inside key-value block\n\t1 | key = =\n\t  |       ^\n\t  |       |\n\t  |       unexpected operator");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/28_exceptions_unexpected_operator.txt:1:7: error: unexpected '=' after operator inside key-value block\n\t1 | key = =\n\t  |       ^\n\t  |       |\n\t  |       unexpected operator");
     }
 }
 

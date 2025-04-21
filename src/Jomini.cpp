@@ -74,30 +74,39 @@ bool Date::operator >(const Date& other) const {
 
 const ObjectMap::Value ObjectMap::s_DefaultValue = { Operator::EQUAL, nullptr };
 
-ObjectMap::ObjectMap(const std::map<std::string, Value>& entries) {
-    m_Items.resize(entries.size());
-    for (auto [key, value] : entries)
+ObjectMap::ObjectMap() {}
+
+ObjectMap::ObjectMap(const std::unordered_map<std::string, Value>& entries) {
+    // m_Items.resize(entries.size());
+    for (const auto& [key, value] : entries)
         this->insert(key, value);
 }
 
 void ObjectMap::insert(const std::string& key, const Value& value) {
-    if (m_Index.find(key) == m_Index.end()) {
+    auto it = m_Index.find(key);
+    if (it == m_Index.end()) {
         m_Items.emplace_back(key, value);
-        m_Index[key] = --m_Items.end();
+        m_Index.emplace(key, --m_Items.end());
     } else {
-        m_Index[key]->second = value;
+        it->second->second = value;
     }
 }
 
 void ObjectMap::insert(std::string_view key, const Value& value) {
     auto it = m_Index.find(key);
     if (it == m_Index.end()) {
-        std::string str = std::string(key);
+        std::string str(key);
         m_Items.emplace_back(str, value);
-        m_Index[str] = --m_Items.end();
+        m_Index.emplace(str, --m_Items.end());
     } else {
         it->second->second = value;
     }
+}
+
+void ObjectMap::insert_missing(std::string_view key, const Value& value) {
+    std::string str(key);    
+    m_Items.emplace_back(str, value);
+    m_Index.emplace(str, --m_Items.end());
 }
 
 template <typename K> void ObjectMap::erase(const K& key) {
@@ -132,7 +141,7 @@ ObjectMap::Value& ObjectMap::operator[](std::string_view key) {
     if (it == m_Index.end()) {
         std::string str = std::string(key);
         m_Items.emplace_back(str, s_DefaultValue);
-        m_Index[str] = --m_Items.end();
+        m_Index.emplace(str, --m_Items.end());
         return m_Items.back().second;
     }
     return it->second->second;
@@ -186,6 +195,10 @@ std::size_t ObjectMap::size() const {
 
 bool ObjectMap::empty() const {
     return m_Items.empty();
+}
+
+void ObjectMap::reserve(size_t size) {
+    m_Index.reserve(size);
 }
 
 //////////////////////////////////////////////////////////
@@ -331,7 +344,7 @@ void Object::ConvertToArray() {
         m_Type = Type::ARRAY;
 
         // If the former object was not empty, then add it to the array.
-        if (!formerObject->GetMap().empty())
+        if (!formerObject->GetMapUnsafe().empty())
             std::get<ObjectArray>(m_Value).push_back(formerObject);
     }
 }
@@ -573,6 +586,36 @@ template <> void Object::Merge(std::string_view key, std::shared_ptr<Object> val
     }
 }
 
+template <typename T> void Object::MergeUnsafe(std::string_view key, T value, Operator op) {
+    ObjectMap& map = std::get<ObjectMap>(m_Value);
+    auto it = map.find(key);
+
+    if (it != map.end()) {
+        it->second.second->Push(std::make_shared<Object>(value), true);
+    }
+    else {
+        map.insert_missing(key, ObjectMap::Value(op, std::make_shared<Object>(value)));
+    }
+}
+
+template <> void Object::MergeUnsafe(std::string_view key, std::shared_ptr<Object> value, Operator op) {
+    ObjectMap& map = std::get<ObjectMap>(m_Value);
+    auto it = map.find(key);
+
+    if (it != map.end()) {
+        if (it->second.second->HasFlag(Flags::LIST | Flags::RANGE) && value->Is(Type::ARRAY)) {
+            for (auto v : value->GetArray())
+                it->second.second->Push(v, false);
+        }
+        else {
+            it->second.second->Push(value, true);
+        }
+    }
+    else {
+        map.insert_missing(key, ObjectMap::Value(op, value));
+    }
+}
+
 std::string& Object::GetString() {
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetString on object.");
@@ -594,6 +637,14 @@ ObjectArray& Object::GetArray() {
         throw std::runtime_error("Cannot use GetArray on scalar.");
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetArray on object.");
+    return std::get<ObjectArray>(m_Value);
+}
+
+ObjectMap& Object::GetMapUnsafe() {
+    return std::get<ObjectMap>(m_Value);
+}
+
+ObjectArray& Object::GetArrayUnsafe() {
     return std::get<ObjectArray>(m_Value);
 }
 
@@ -624,25 +675,19 @@ void Reader::Open(std::istream& stream) {
     // Initialize member variables.
     m_Buffer.clear();
     m_View = std::string_view{};
-    m_Lines.clear();
     m_CurrentLine = 0;
     m_CurrentCursor = 0;
     m_CurrentGlobalCursor = 0;
 
     // Copy the whole file into the buffer.
-    m_Buffer = std::string(std::istreambuf_iterator<char>(stream), {});
-    m_View = std::string_view(m_Buffer);
+    stream.seekg(0, std::ios::end);
+    std::streamsize size = stream.tellg();
+    stream.seekg(0, std::ios::beg);
+    m_Buffer.resize(static_cast<size_t>(size));
+    stream.read(m_Buffer.data(), size);
 
-    // Read the buffer view line by line to fill the vector.
-    size_t start = 0;
-    while (start < m_View.size()) {
-        size_t end = m_View.find('\n', start);
-        if (end == std::string_view::npos)
-            end = m_View.size();
-        std::string_view line = m_View.substr(start, end - start);
-        m_Lines.push_back(line);
-        start = end + 1;
-    }
+    // Initialize the string view using the buffer.
+    m_View = std::string_view(m_Buffer);
 }
 
 bool Reader::IsEmpty() {
@@ -701,8 +746,19 @@ void Reader::SkipUntil(const std::function<bool(char)>& predicate) {
 std::string_view Reader::GetView() const {
     return m_View;
 }
+
 std::string_view Reader::GetLine(uint line) const {
-    return m_Lines.at(line);
+    // This code does not need to be performant as
+    // it is only used if an exception is raised.
+    size_t start = 0;
+    for (uint n = 0; n < line; n++) {
+        size_t pos = m_View.find('\n', start);
+        if (pos == std::string_view::npos)
+            return {};
+        start = pos + 1;
+    }
+    size_t end = m_View.find('\n', start);
+    return m_View.substr(start, (end == std::string_view::npos ? m_View.size() : end) - start);
 }
 
 uint Reader::GetCurrentLine() const {
@@ -805,6 +861,15 @@ std::shared_ptr<Object> Parser::ParseString(const std::string& content) {
     return obj;
 }
 
+#define IS_BLANK(ch) (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
+#define IS_OPERATOR(ch) (ch == '=' || ch == '<' || ch == '>' || ch == '!' || ch == '?')
+#define IS_BRACE(ch) (ch == '{' || ch == '}')
+#define IS_COMMENT(ch) (ch == '#')
+
+const auto newLinePredicate = [](char c){ return c == '\n'; };
+const auto blankPredicate = [](char c){ return IS_BLANK(c) || IS_OPERATOR(c) || IS_BRACE(c) || IS_COMMENT(c); };
+const auto quotePredicate = [](char c){ return c == '"'; };
+
 std::shared_ptr<Object> Parser::Parse(int depth) {
     // Initialize the main object, key and operator.
     // Depending on what is read, the object can be an scalar, an object (map) or an array.
@@ -813,13 +878,6 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
     std::string_view key = "";
     Operator op = Operator::EQUAL;
     Flags flags = Flags::NONE;
-
-    #define IS_BLANK(ch) (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
-    #define IS_OPERATOR(ch) (ch == '=' || ch == '<' || ch == '>' || ch == '!' || ch == '?')
-    #define IS_BRACE(ch) (ch == '{' || ch == '}')
-    #define IS_COMMENT(ch) (ch == '#')
-
-    // IS_BLANK(stream.peek()) || IS_OPERATOR(stream.peek()) || IS_BRACE(stream.peek()) || IS_COMMENT(stream.peek())
 
     // Initialize the current parsing state:
     int state = 1;
@@ -831,7 +889,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
         if (IS_BLANK(ch))
             continue;
         if (IS_COMMENT(ch)) {
-            m_Reader.SkipUntil([](char c){ return c == '\n'; });
+            m_Reader.SkipUntil(newLinePredicate);
             continue;
         }
 
@@ -852,13 +910,15 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
         //  - next: state #4
         //  - accepts: {
         else if (state == 1 && ch == '{') {
-            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMapUnsafe().empty())
                 THROW_ERROR("unexpected opening brace '{' inside key-value block", "stray opening brace", 0);
             int lastBrace = m_Reader.GetCurrentLine();
             m_LastBraceLine = lastBrace;
             std::shared_ptr<Object> object = this->Parse(depth+1);
             m_LastBraceLine = lastBrace;
+
             mainObject->Push(object, true);
+
             key = "";
             state = 4;
         }
@@ -869,7 +929,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
         else if (state == 1) {
             if (IS_OPERATOR(ch))
                 THROW_ERROR(std::format("expected key before '{}'", OperatorsLabels.at(op)), "missing key", 0);
-            key = m_Reader.ReadUntil([ch](char c){ return (ch == '"' && c == '"') || (ch != '"' && (IS_BLANK(c) || IS_OPERATOR(c) || IS_BRACE(c) || IS_COMMENT(c))); }, true, ch == '"');
+            key = m_Reader.ReadUntil((ch == '"' ? quotePredicate : blankPredicate), true, ch == '"');
             state = 2;
         }
         // State #2a: parsing operator after #1.
@@ -905,7 +965,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
         //  - next: state #4
         //  - accepts: {
         else if (state == 2 && ch == '{') {
-            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMapUnsafe().empty())
                 THROW_ERROR("unexpected opening brace '{' inside key-value block; expected operator", "stray opening brace; did you mean '='?", -1);
             int lastBrace = m_Reader.GetCurrentLine();
             m_LastBraceLine = lastBrace;
@@ -921,7 +981,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
         //  - next: terminal
         //  - accepts: }
         else if (state == 2 && ch == '}') {
-            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMapUnsafe().empty())
                 THROW_ERROR("unexpected closing brace '}'; expected '=' or another operator", "unexpected closing brace; did you mean '='?", 0);
             mainObject->Push(key, true);
             return mainObject;
@@ -931,9 +991,9 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
         //  - next: state #4
         //  - accepts: non-blank
         else if (state == 2) {
-            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMap().empty())
+            if (mainObject->Is(Type::OBJECT) && !mainObject->GetMapUnsafe().empty())
                 THROW_ERROR("unexpected value after key inside key-value block; expected operator", "unexpected value", -1);
-            std::string_view buffer = m_Reader.ReadUntil([ch](char c){ return (ch == '"' && c == '"') || (ch != '"' && (IS_BLANK(c) || IS_OPERATOR(c) || IS_BRACE(c) || IS_COMMENT(c))); }, true, ch == '"');
+            std::string_view buffer = m_Reader.ReadUntil((ch == '"' ? quotePredicate : blankPredicate), true, ch == '"');
             mainObject->Push(key, true);
             mainObject->Push(buffer);
             key = "";
@@ -969,8 +1029,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
                 else for (int i = a; i >= b; i--)
                     array.push_back(std::make_shared<Object>(i));
             }
-            
-            mainObject->Merge(key, object, op);
+            mainObject->MergeUnsafe(key, object, op);
             mainObject->Get(key)->SetFlag(flags, true);
             flags = Flags::NONE;
             key = "";
@@ -985,7 +1044,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
                 THROW_ERROR(std::format("unexpected '{}' after operator inside key-value block", (char) ch), "unexpected operator", 0);
             if (IS_BRACE(ch))
                 THROW_ERROR("unexpected closing brace '}' after operator inside key-value block", "unexpected closing brace", 0);
-            std::string_view buffer = m_Reader.ReadUntil([ch](char c){ return (ch == '"' && c == '"') || (ch != '"' && (IS_BLANK(c) || IS_OPERATOR(c) || IS_BRACE(c) || IS_COMMENT(c))); }, true, ch == '"');
+            std::string_view buffer = m_Reader.ReadUntil((ch == '"' ? quotePredicate : blankPredicate), true, ch == '"');
             // Check if the value correspond to an array flag.
             if (buffer == "rgb")
                 flags = Flags::RGB;
@@ -996,7 +1055,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
             else if (buffer == "RANGE")
                 flags = Flags::RANGE;
             else {
-                mainObject->Merge(key, std::make_shared<Object>(buffer), op);
+                mainObject->MergeUnsafe(key, std::make_shared<Object>(buffer), op);
                 key = "";
                 state = 1;
                 continue;
@@ -1032,7 +1091,7 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
         else if (state == 4) {
             if (IS_OPERATOR(ch))
                 THROW_ERROR(std::format("unexpected '{}' inside array block", (char) ch), "unexpected operator", 0);
-            std::string_view buffer = m_Reader.ReadUntil([ch](char c){ return (ch == '"' && c == '"') || (ch != '"' && (IS_BLANK(c) || IS_OPERATOR(c) || IS_BRACE(c) || IS_COMMENT(c))); }, true, ch == '"');
+            std::string_view buffer = m_Reader.ReadUntil((ch == '"' ? quotePredicate : blankPredicate), true, ch == '"');
             mainObject->Push(buffer);
             state = 4;
         }

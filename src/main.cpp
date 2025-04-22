@@ -290,6 +290,11 @@ TEST_CASE("[11_arrays_flags] arrays with special flags (color, range...)") {
     for (auto o : object->Get("range3")->GetArray())
         CHECK(o->GetType() == Type::SCALAR);
     CHECK(SerializeVector(object->Get("range3")->AsArray<std::string>()) == "{ 1 2 3 4 10 2 }");
+
+    CHECK(object->Get("trait")->GetType() == Type::ARRAY);
+    CHECK(object->Get("trait")->GetFlags() == Flags::MULTILINE);
+    CHECK(SerializeVector(object->Get("trait")->AsArray<std::string>()) == "{ diligent patient brave }");
+    CHECK(object->Get("trait")->SerializeArrayMultiline("trait", Operator::EQUAL) == "trait = diligent\ntrait = patient\ntrait = brave\n");
 }
 
 TEST_CASE("[12_comments] comments") {
@@ -366,7 +371,7 @@ TEST_CASE("[16_exceptions_unexpected_closing_brace] unexpected closing brace aft
         ParseFile("tests/16_exceptions_unexpected_closing_brace.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/16_exceptions_unexpected_closing_brace.txt:1:13: error: unexpected closing brace '}'\n\t1 | key = value }\n\t  |             ^\n\t  |             |\n\t  |             unmatched closing brace");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/16_exceptions_unexpected_closing_brace.txt:1:13: error: unexpected closing brace '}'\n\t1 | key = value }\n\t  |             ^\n\t  |             |\n\t  |             unmatched closing brace");
     }
 }
 
@@ -421,7 +426,7 @@ TEST_CASE("[20_exceptions_object_unexpected_opening_brace] unexpected opening br
         ParseFile("tests/20_exceptions_object_unexpected_opening_brace.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/20_exceptions_object_unexpected_opening_brace.txt:3:5: error: unexpected opening brace '{' inside key-value block\n\t1 | key = {\n\t  | ...\n\t3 |     {\n\t  |     ^\n\t  |     |\n\t  |     stray opening brace");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/20_exceptions_object_unexpected_opening_brace.txt:3:5: error: unexpected opening brace '{' inside key-value block\n\t1 | key = {\n\t  | ...\n\t3 |     {\n\t  |     ^\n\t  |     |\n\t  |     stray opening brace");
     }
 }
 
@@ -432,7 +437,7 @@ TEST_CASE("[21_exceptions_missing_key] missing key before operator inside object
         ParseFile("tests/21_exceptions_missing_key.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/21_exceptions_missing_key.txt:2:5: error: expected key before '='\n\t1 | key = {\n\t2 |     = \"value\"\n\t  |     ^\n\t  |     |\n\t  |     missing key");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/21_exceptions_missing_key.txt:2:5: error: expected key before '='\n\t1 | key = {\n\t2 |     = \"value\"\n\t  |     ^\n\t  |     |\n\t  |     missing key");
     }
 }
 
@@ -443,7 +448,7 @@ TEST_CASE("[22_exceptions_unexpected_exclamation_mark.txt] unexpected exclamatio
         ParseFile("tests/22_exceptions_unexpected_exclamation_mark.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/22_exceptions_unexpected_exclamation_mark.txt:2:9: error: unexpected token '!'\n\t1 | key = {\n\t2 |     key ! value\n\t  |         ^\n\t  |         |\n\t  |         unexpected exclamation mark; did you mean '!='?");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/22_exceptions_unexpected_exclamation_mark.txt:2:9: error: unexpected token '!'\n\t1 | key = {\n\t2 |     key ! value\n\t  |         ^\n\t  |         |\n\t  |         unexpected exclamation mark; did you mean '!='?");
     }
 }
 
@@ -454,7 +459,7 @@ TEST_CASE("[23_exceptions_unexpected_question_mark.txt] unexpected question mark
         ParseFile("tests/23_exceptions_unexpected_question_mark.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/23_exceptions_unexpected_question_mark.txt:2:9: error: unexpected token '?'\n\t1 | key = {\n\t2 |     key ? value\n\t  |         ^\n\t  |         |\n\t  |         unexpected question mark; did you mean '?='?");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/23_exceptions_unexpected_question_mark.txt:2:9: error: unexpected token '?'\n\t1 | key = {\n\t2 |     key ? value\n\t  |         ^\n\t  |         |\n\t  |         unexpected question mark; did you mean '?='?");
     }
 }
 
@@ -465,7 +470,7 @@ TEST_CASE("[24_exceptions_object_expected_operator.txt] expected operator after 
         ParseFile("tests/24_exceptions_object_expected_operator.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/24_exceptions_object_expected_operator.txt:3:10: error: unexpected opening brace '{' inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     key2 { v1 v2 }\n\t  |          ^\n\t  |          |\n\t  |          stray opening brace; did you mean '='?");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/24_exceptions_object_expected_operator.txt:3:10: error: unexpected opening brace '{' inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     key2 { v1 v2 }\n\t  |          ^\n\t  |          |\n\t  |          stray opening brace; did you mean '='?");
     }
 }
 
@@ -476,7 +481,7 @@ TEST_CASE("[25_exceptions_object_unexpected_closing_brace.txt] unexpected closin
         ParseFile("tests/25_exceptions_object_unexpected_closing_brace.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/25_exceptions_object_unexpected_closing_brace.txt:4:1: error: unexpected closing brace '}'; expected '=' or another operator\n\t1 | key = {\n\t  | ...\n\t4 | }\n\t  | ^\n\t  | |\n\t  | unexpected closing brace; did you mean '='?");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/25_exceptions_object_unexpected_closing_brace.txt:4:1: error: unexpected closing brace '}'; expected '=' or another operator\n\t1 | key = {\n\t  | ...\n\t4 | }\n\t  | ^\n\t  | |\n\t  | unexpected closing brace; did you mean '='?");
     }
 }
 
@@ -487,7 +492,7 @@ TEST_CASE("[26_exceptions_object_unexpected_value.txt] unexpected value after ke
         ParseFile("tests/26_exceptions_object_unexpected_value.txt");
     }
     catch (std::exception& e) {
-        CHECK(std::string(e.what()).substr(18) == ": an exception has been raised.\ntests/26_exceptions_object_unexpected_value.txt:3:12: error: unexpected value after key inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     value1 value2\n\t  |            ^\n\t  |            |\n\t  |            unexpected value");
+        CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/26_exceptions_object_unexpected_value.txt:3:12: error: unexpected value after key inside key-value block; expected operator\n\t1 | key = {\n\t  | ...\n\t3 |     value1 value2\n\t  |            ^\n\t  |            |\n\t  |            unexpected value");
     }
 }
 

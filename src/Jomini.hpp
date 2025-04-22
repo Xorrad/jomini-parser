@@ -65,6 +65,7 @@ namespace Jomini {
         HSV   = 1 << 1,
         LIST  = 1 << 2,
         RANGE = 1 << 3,
+        MULTILINE = 1 << 4,
     };
     
     Flags operator|(Flags a, Flags b);
@@ -218,13 +219,13 @@ namespace Jomini {
             ObjectArray& GetArrayUnsafe();
 
             std::string Serialize(uint depth = 0, bool isInline = false) const;
-
-        private:
             std::string SerializeScalar(uint depth = 0) const;
             std::string SerializeObject(uint depth = 0, bool isInline = false) const;
             std::string SerializeArray(uint depth = 0) const;
             std::string SerializeArrayRange(const std::string& key, Operator op, uint depth = 0) const;
+            std::string SerializeArrayMultiline(const std::string& key, Operator op, uint depth = 0) const;
 
+        private:
             std::variant<std::string, ObjectMap, ObjectArray> m_Value;
             Type m_Type;
             Flags m_Flags;

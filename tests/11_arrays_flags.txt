@@ -9,3 +9,7 @@ range2 = RANGE { 5 1 }
 
 range3 = RANGE { 1 4 }
 range3 = LIST { 10 2 }
+
+trait = diligent
+trait = patient
+trait = brave

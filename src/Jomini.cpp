@@ -616,6 +616,7 @@ template <> void Object::MergeUnsafe(std::string_view key, std::shared_ptr<Objec
                 it->second.second->Push(v, false);
         }
         else {
+            it->second.second->SetFlag(Flags::MULTILINE, true);
             it->second.second->Push(value, true);
         }
     }
@@ -689,6 +690,12 @@ std::string Object::SerializeObject(uint depth, bool isInline) const {
         if (it->second.second->HasFlag(Flags::LIST) || it->second.second->HasFlag(Flags::RANGE)) {
             lines.append(
                 it->second.second->SerializeArrayRange(it->first, it->second.first, depth)
+            );
+            continue;
+        }
+        else if (it->second.second->HasFlag(Flags::MULTILINE)) {
+            lines.append(
+                it->second.second->SerializeArrayMultiline(it->first, it->second.first, depth)
             );
             continue;
         }
@@ -782,6 +789,17 @@ std::string Object::SerializeArrayRange(const std::string& key, Operator op, uin
             lines.append(std::format("{}{}", (it == loneNumbers.begin() ? "" : " "), *it));
         lines.append(" }");
     }
+
+    return lines;
+}
+
+std::string Object::SerializeArrayMultiline(const std::string& key, Operator op, uint depth) const {
+    std::vector<std::shared_ptr<Object>> objects = std::get<ObjectArray>(m_Value);
+    std::string indent = std::string(depth, '\t');
+    std::string lines = "";
+
+    for (auto object : objects)
+        lines.append(std::format("{}{} {} {}\n", indent, key, OperatorsLabels.at(op), object->Serialize()));
 
     return lines;
 }

@@ -69,6 +69,38 @@ bool Date::operator >(const Date& other) const {
 }
 
 //////////////////////////////////////////////////////////
+//                     sf::Color                        //
+//////////////////////////////////////////////////////////
+
+sf::Color ColorFromHsv(double h, double s, double v, double a) {
+    // Clamp values just below 1.0 if they are equal to 1.0.
+    const double epsilon = 1e-5;
+    if (h >= 1.0) h = 1.0 - epsilon;
+    if (s >= 1.0) s = 1.0 - epsilon;
+    if (v >= 1.0) v = 1.0 - epsilon;
+
+    h *= 6.0;
+    double c = v * s;
+    double x = c * (1 - std::fabs(std::fmod(h, 2.0) - 1));
+    double m = v - c;
+
+    double r = 0, g = 0, b = 0;
+    if (h < 1)      { r = c; g = x; b = 0; }
+    else if (h < 2) { r = x; g = c; b = 0; }
+    else if (h < 3) { r = 0; g = c; b = x; }
+    else if (h < 4) { r = 0; g = x; b = c; }
+    else if (h < 5) { r = x; g = 0; b = c; }
+    else            { r = c; g = 0; b = x; }
+
+    uint8_t R = static_cast<uint8_t>((r + m) * 255);
+    uint8_t G = static_cast<uint8_t>((g + m) * 255);
+    uint8_t B = static_cast<uint8_t>((b + m) * 255);
+    uint8_t A = static_cast<uint8_t>(std::min(a, 1.0) * 255);
+
+    return sf::Color(R, G, B, A);
+}
+
+//////////////////////////////////////////////////////////
 //                 Ordered Object Map                   //
 //////////////////////////////////////////////////////////
 
@@ -423,6 +455,33 @@ template <> Date Object::As() const {
     }
     catch (std::exception& e) {
         throw std::runtime_error(std::string(e.what()) + " Invalid conversion of object to date.");
+    }
+}
+
+template <> sf::Color Object::As() const {
+    if (m_Type != Type::ARRAY)
+        throw std::runtime_error("Invalid conversion of object to sf::Color.");
+    const ObjectArray& array = std::get<ObjectArray>(m_Value);
+    if (array.size() < 3)
+        throw std::runtime_error("Invalid conversion of object to sf::Color.");
+    try {
+        if (this->HasFlag(Flags::HSV)) {
+            double h = array.at(0)->As<double>();
+            double s = array.at(1)->As<double>();
+            double v = array.at(2)->As<double>();
+            double a = (array.size() > 3) ? array.at(3)->As<double>() : 1.0;
+            return ColorFromHsv(h, s, v, a);
+        }
+        else {
+            int r = array.at(0)->As<int>();
+            int g = array.at(1)->As<int>();
+            int b = array.at(2)->As<int>();
+            int a = (array.size() > 3) ? array.at(3)->As<int>() : 255;
+            return sf::Color(r, g, b, a);
+        }
+    }
+    catch (std::exception& e) {
+        throw std::runtime_error(std::string(e.what()) + " Invalid conversion of object to sf::Color.");
     }
 }
 

@@ -2,7 +2,7 @@ MAKEFLAGS += -j4
 
 # Compiler flags
 CXX      := g++-13
-CXXFLAGS := -std=c++20 -pedantic-errors -Wall -Wno-format-security -Wno-sign-compare
+CXXFLAGS := -std=c++20 -pedantic-errors -Wall -Wno-format-security -Wno-sign-compare -DNSFML
 
 # Libraries
 LDFLAGS := -L/usr/lib -lbfd -ldw

@@ -342,6 +342,25 @@ TEST_CASE("[13_utf8] utf8 characters") {
     CHECK(object->Get("眼泪")->As<std::string>() == "chinese3");
 }
 
+TEST_CASE("[14_colors] colors") {
+    std::shared_ptr<Object> object = ParseFile("tests/14_colors.txt");
+
+    CHECK(object->Get("color1")->GetType() == Type::ARRAY);
+    CHECK((std::string) object->Get("color1")->As<sf::Color>() == (std::string) sf::Color(255, 0, 0, 255));
+    CHECK(object->Get("color2")->GetType() == Type::ARRAY);
+    CHECK((std::string) object->Get("color2")->As<sf::Color>() == (std::string) sf::Color(64, 2, 41, 100));
+    CHECK(object->Get("color3")->GetType() == Type::ARRAY);
+    CHECK(object->Get("color3")->GetFlags() == Flags::RGB);
+    CHECK((std::string) object->Get("color3")->As<sf::Color>() == (std::string) sf::Color(64, 2, 41, 255));
+    
+    CHECK(object->Get("color4")->GetType() == Type::ARRAY);
+    CHECK(object->Get("color4")->GetFlags() == Flags::HSV);
+    CHECK((std::string) object->Get("color4")->As<sf::Color>() == (std::string) sf::Color(43, 57, 58, 255));
+    CHECK(object->Get("color5")->GetType() == Type::ARRAY);
+    CHECK(object->Get("color5")->GetFlags() == Flags::HSV);
+    CHECK((std::string) object->Get("color5")->As<sf::Color>() == (std::string) sf::Color(43, 57, 58, 229));
+}
+
 TEST_CASE("[14_exceptions_missing_value] value missing after key and operator") {
     CHECK_THROWS_AS(ParseFile("tests/14_exceptions_missing_value.txt"), std::runtime_error);
 

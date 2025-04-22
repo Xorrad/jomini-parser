@@ -803,6 +803,10 @@ std::string Object::SerializeArray(uint depth) const {
 
     if (hasObjectOrArray)
         lines.append("\n" + std::string(std::max(0U, depth-1), '\t'));
+    else if (this->HasFlag(Flags::HSV))
+        lines = "hsv " + lines;
+    else if (this->HasFlag(Flags::RGB))
+        lines = "rgb " + lines;
     lines.append("}");
 
     return lines;

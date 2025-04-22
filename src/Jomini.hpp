@@ -14,7 +14,7 @@
 #include <format>
 #include <string_view>
 #include <functional>
-#include <chrono>
+#include <ranges>
 
 namespace Jomini {
 
@@ -217,7 +217,14 @@ namespace Jomini {
             ObjectMap& GetMapUnsafe();
             ObjectArray& GetArrayUnsafe();
 
+            std::string Serialize(uint depth = 0, bool isInline = false) const;
+
         private:
+            std::string SerializeScalar(uint depth = 0) const;
+            std::string SerializeObject(uint depth = 0, bool isInline = false) const;
+            std::string SerializeArray(uint depth = 0) const;
+            std::string SerializeArrayRange(const std::string& key, Operator op, uint depth = 0) const;
+
             std::variant<std::string, ObjectMap, ObjectArray> m_Value;
             Type m_Type;
             Flags m_Flags;

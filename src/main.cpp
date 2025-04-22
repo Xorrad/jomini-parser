@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
 
 void ManualTests() {
     std::shared_ptr<Object> object = ParseFile("tests/00_tests.txt");
+    std::cout << std::endl << object->Serialize() << std::endl;
     // std::cout << "keys:" << std::endl;
     // for (auto [key, pair] : object->GetMap()) {
     //     std::cout << key << std::endl;

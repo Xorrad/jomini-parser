@@ -19,7 +19,7 @@ COMMON_SRC := $(SRC_DIR)/Jomini.cpp
 COMMON_OBJ := $(BIN_DIR)/Jomini.o
 
 # Build type (default, debug, release)
-BUILD_TYPE := release
+BUILD_TYPE := debug
 ifeq ($(BUILD_TYPE),debug)
     CXXFLAGS += -O0 -DDEBUG -g #-fsanitize=address
 else ifeq ($(BUILD_TYPE),release)

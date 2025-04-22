@@ -324,7 +324,7 @@ void Object::SetFlags(Flags flags) {
 }
 
 void Object::SetFlag(Flags flag, bool enabled) {
-    if(enabled) m_Flags |= flag;
+    if (enabled) m_Flags |= flag;
     else m_Flags &= (~flag);
 }
 
@@ -656,6 +656,136 @@ ObjectArray& Object::GetArrayUnsafe() {
     return std::get<ObjectArray>(m_Value);
 }
 
+std::string Object::Serialize(uint depth, bool isInline) const {
+    if (m_Type == Type::OBJECT)
+        return this->SerializeObject(depth, isInline);
+    if (m_Type == Type::ARRAY)
+        return this->SerializeArray(depth);
+    return this->SerializeScalar(depth);
+}
+
+std::string Object::SerializeScalar(uint depth) const {
+    if (m_Type != Type::SCALAR)
+        return "";
+    return std::get<std::string>(m_Value);
+}
+
+std::string Object::SerializeObject(uint depth, bool isInline) const {
+    if (m_Type != Type::OBJECT)
+        return "";  
+    const ObjectMap& map = std::get<ObjectMap>(m_Value);
+
+    // An empty object is an empty-string on first depth, { } otherwise.
+    if (map.empty())
+        return (depth > 0) ? "{ }" : "";
+
+    // Format recursively objects in the current object.
+    std::string lines = "";
+
+    for (auto it = map.begin(); it != map.end(); it++) {
+        if (it != map.begin())
+            lines.append(isInline ? " " : "\n");
+
+        if (it->second.second->HasFlag(Flags::LIST) || it->second.second->HasFlag(Flags::RANGE)) {
+            lines.append(
+                it->second.second->SerializeArrayRange(it->first, it->second.first, depth)
+            );
+            continue;
+        }
+
+        lines.append(std::format(
+            "{}{} {} {}",
+            std::string((isInline ? 0 : depth), '\t'), // Indentation
+            it->first, // Key
+            OperatorsLabels.at(it->second.first), // Operator
+            it->second.second->Serialize(depth+1, isInline) // Value
+        ));
+    }
+
+    // On first depth, the object is formatted as ..., instead of {...} 
+    if (depth == 0)
+        return lines;
+    if (isInline)
+        return std::format("{{ {} }}", lines);
+    return std::format("{{\n{}\n{}}}", lines, std::string(depth-1, '\t'));
+}
+
+std::string Object::SerializeArray(uint depth) const {
+    if (m_Type != Type::ARRAY)
+        return "";
+    const ObjectArray& array = std::get<ObjectArray>(m_Value);
+
+    if (array.empty())
+        return "{ }";
+
+    std::string lines = "{ ";
+    std::string indent = std::string(depth, '\t');
+    bool hasObjectOrArray = false;
+
+    for (auto it = array.begin(); it != array.end(); it++) {
+        if ((*it)->Is(Type::SCALAR)) {
+            if (!lines.empty() && lines.at(lines.size()-1) == '\n')
+                lines.append(indent);
+            lines.append(std::format("{} ", (*it)->As<std::string>()));
+            continue;
+        }
+        if (!lines.empty() && lines.at(lines.size()-1) != '\n')
+            lines.append("\n");
+        lines.append(std::format("{}{}{}", indent, (*it)->Serialize(depth+1, true), (it == std::prev(array.end()) ? "" : "\n")));
+        hasObjectOrArray = true;
+    }
+
+    if (hasObjectOrArray)
+        lines.append("\n" + std::string(std::max(0U, depth-1), '\t'));
+    lines.append("}");
+
+    return lines;
+}
+
+std::string Object::SerializeArrayRange(const std::string& key, Operator op, uint depth) const {
+    std::vector<int> l = this->AsArray<int>();
+    std::vector<int> loneNumbers;
+    std::string indent = std::string(depth, '\t');
+
+    // Make a list of the lines to build the list
+    // with LIST and RANGE depending on the values.
+    std::string lines = "";
+    int count = 0;
+    int start = 0;
+    int current = 1;
+
+    while (current <= l.size()) {
+        // Count the number of elements in the current range and make
+        // a range only if there are at least 3 elements.
+        int n = current - start;
+
+        // Push a new line if a streak is broken or if it is the last element of the vector.
+        if (current == l.size() || l[current-1]+1 != l[current]) {
+            if (n > 3) {
+                lines.append(std::format("{}{}{} {} RANGE {{ {} {} }}", (count == 0 ? "" : "\n"), indent, key, OperatorsLabels.at(op), l[start], l[current-1]));
+                count++;
+            }
+            else {
+                for(int i = start; i < current; i++)
+                    loneNumbers.push_back(l[i]);
+            }
+            start = current;
+        }
+        current++;
+    }
+
+    if (!loneNumbers.empty()) {
+        if (count > 0)
+            lines.append("\n");
+        lines.append(std::format("{}{} {} LIST {{ ", indent, key, OperatorsLabels.at(op)));
+        for (auto it = loneNumbers.begin(); it != loneNumbers.end(); it++)
+            lines.append(std::format("{}{}", (it == loneNumbers.begin() ? "" : " "), *it));
+        lines.append(" }");
+    }
+
+    return lines;
+}
+
 //////////////////////////////////////////////////////////
 //                      Reader                          //
 //////////////////////////////////////////////////////////
@@ -668,7 +798,7 @@ Reader::~Reader() {}
 
 void Reader::OpenFile(std::string filePath) {
     std::ifstream file(filePath);
-    if(!file.is_open())
+    if (!file.is_open())
         return;
     this->Open(file);
     file.close();

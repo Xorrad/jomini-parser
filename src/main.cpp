@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
     doctest::Context context(argc, argv);
     context.run();
 
-    ManualTests();
-    Benchmark();
+    // ManualTests();
+    // Benchmark();
 
     return 0;
 }
@@ -557,4 +557,83 @@ TEST_CASE("[30_exceptions_array_unexpected_operator.txt] unexpected operator in 
     catch (std::exception& e) {
         CHECK(std::string(e.what()).substr(19) == ": an exception has been raised.\ntests/30_exceptions_array_unexpected_operator.txt:4:4: error: unexpected '=' inside array block\n\t1 | key = {\n\t  | ...\n\t4 |    = \n\t  |    ^\n\t  |    |\n\t  |    unexpected operator");
     }
+}
+
+TEST_CASE("[scalar_constructors] scalar object constructors") {
+    auto o_string = std::make_shared<Object>("string");
+    auto o_int = std::make_shared<Object>(1234);
+    auto o_double = std::make_shared<Object>(12.2345);
+    auto o_false = std::make_shared<Object>(false);
+    auto o_true = std::make_shared<Object>(true);
+    auto o_date = std::make_shared<Object>(Date(100, 1, 12));
+    auto o_color = std::make_shared<Object>(sf::Color(123, 200, 24, 100));
+
+    CHECK(o_string->GetType() == Type::SCALAR);
+    CHECK(o_string->As<std::string>() == "string");
+    CHECK(o_int->GetType() == Type::SCALAR);
+    CHECK(o_int->As<std::string>() == "1234");
+    CHECK(o_double->GetType() == Type::SCALAR);
+    CHECK(o_double->As<std::string>() == "12.234500");
+    CHECK(o_false->GetType() == Type::SCALAR);
+    CHECK(o_false->As<std::string>() == "no");
+    CHECK(o_true->GetType() == Type::SCALAR);
+    CHECK(o_true->As<std::string>() == "yes");
+    CHECK(o_date->GetType() == Type::SCALAR);
+    CHECK(o_date->As<std::string>() == "100.1.12");
+    CHECK(o_color->GetType() == Type::ARRAY);
+    CHECK(o_color->GetFlags() == Flags::RGB);
+    CHECK((std::string) o_color->As<sf::Color>() == "(123, 200, 24, 100)");
+}
+
+TEST_CASE("[array_constructors] array object constructors") {
+    auto o_string = std::make_shared<Object>(std::vector<std::string>{"value1", "value2", "value3"});
+    auto o_int = std::make_shared<Object>(std::vector<int>{1, 20, 300});
+    auto o_double = std::make_shared<Object>(std::vector<double>{1.2, 20.55, 300.987});
+    auto o_bool = std::make_shared<Object>(std::vector<bool>{true, false, true});
+    auto o_date = std::make_shared<Object>(std::vector<Date>{Date(100, 1, 12), Date(56, 7, 29)});
+
+    CHECK(o_string->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(o_string->AsArray<std::string>()) == "{ value1 value2 value3 }");
+    CHECK(o_int->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(o_int->AsArray<std::string>()) == "{ 1 20 300 }");
+    CHECK(o_double->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(o_double->AsArray<std::string>()) == "{ 1.200000 20.550000 300.987000 }");
+    CHECK(o_bool->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(o_bool->AsArray<std::string>()) == "{ yes no yes }");
+    CHECK(o_date->GetType() == Type::ARRAY);
+    CHECK(SerializeVector(o_date->AsArray<std::string>()) == "{ 100.1.12 56.7.29 }");
+}
+
+TEST_CASE("[misc_constructors] misc object constructors") {
+    auto o_default = std::make_shared<Object>();
+    auto o_map = std::make_shared<Object>(ObjectMap{{std::make_pair("key", std::make_pair(Operator::LESS, std::make_shared<Object>("value")))}});
+    auto o_array = std::make_shared<Object>(ObjectArray{std::make_shared<Object>("value1"), std::make_shared<Object>("value2")});
+    auto o_refsrc = std::make_shared<Object>("string");
+    auto o_ref = std::make_shared<Object>(*o_refsrc);
+    auto o_ptr = std::make_shared<Object>(o_refsrc);
+    o_refsrc->Set("a");
+
+    CHECK(o_default->GetType() == Type::OBJECT);
+    CHECK(o_default->GetFlags() == Flags::NONE);
+    CHECK(o_default->GetMap().size() == 0);
+    
+    CHECK(o_map->GetType() == Type::OBJECT);
+    CHECK(o_map->GetFlags() == Flags::NONE);
+    CHECK(o_map->GetMap().size() == 1);
+    CHECK(o_map->Contains("key"));
+    CHECK(o_map->GetOperator("key") == Operator::LESS);
+    CHECK(o_map->Get("key")->As<std::string>() == "value");
+    
+    CHECK(o_array->GetType() == Type::ARRAY);
+    CHECK(o_array->GetFlags() == Flags::NONE);
+    CHECK(o_array->GetArray().size() == 2);
+    CHECK(SerializeVector(o_array->AsArray<std::string>()) == "{ value1 value2 }");
+    
+    CHECK(o_ref->GetType() == Type::SCALAR);
+    CHECK(o_ref->GetFlags() == Flags::NONE);
+    CHECK(o_ref->As<std::string>() == "string");
+    
+    CHECK(o_ptr->GetType() == Type::SCALAR);
+    CHECK(o_ptr->GetFlags() == Flags::NONE);
+    CHECK(o_ptr->As<std::string>() == "string");
 }

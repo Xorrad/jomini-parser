@@ -716,9 +716,9 @@ ObjectArray& Object::GetArrayUnsafe() {
     return std::get<ObjectArray>(m_Value);
 }
 
-std::string Object::Serialize(uint depth, bool isInline) const {
+std::string Object::Serialize(uint depth, bool isRoot, bool isInline) const {
     if (m_Type == Type::OBJECT)
-        return this->SerializeObject(depth, isInline);
+        return this->SerializeObject(depth, isRoot, isInline);
     if (m_Type == Type::ARRAY)
         return this->SerializeArray(depth);
     return this->SerializeScalar(depth);
@@ -730,7 +730,7 @@ std::string Object::SerializeScalar(uint depth) const {
     return std::get<std::string>(m_Value);
 }
 
-std::string Object::SerializeObject(uint depth, bool isInline) const {
+std::string Object::SerializeObject(uint depth, bool isRoot, bool isInline) const {
     if (m_Type != Type::OBJECT)
         return "";  
     const ObjectMap& map = std::get<ObjectMap>(m_Value);
@@ -764,12 +764,12 @@ std::string Object::SerializeObject(uint depth, bool isInline) const {
             std::string((isInline ? 0 : depth), '\t'), // Indentation
             it->first, // Key
             OperatorsLabels.at(it->second.first), // Operator
-            it->second.second->Serialize(depth+1, isInline) // Value
+            it->second.second->Serialize(depth+1, false, isInline) // Value
         ));
     }
 
     // On first depth, the object is formatted as ..., instead of {...} 
-    if (depth == 0)
+    if (depth == 0 || isRoot)
         return lines;
     if (isInline)
         return std::format("{{ {} }}", lines);
@@ -797,7 +797,7 @@ std::string Object::SerializeArray(uint depth) const {
         }
         if (!lines.empty() && lines.at(lines.size()-1) != '\n')
             lines.append("\n");
-        lines.append(std::format("{}{}{}", indent, (*it)->Serialize(depth+1, true), (it == std::prev(array.end()) ? "" : "\n")));
+        lines.append(std::format("{}{}{}", indent, (*it)->Serialize(depth+1, false, true), (it == std::prev(array.end()) ? "" : "\n")));
         hasObjectOrArray = true;
     }
 
@@ -862,7 +862,7 @@ std::string Object::SerializeArrayMultiline(const std::string& key, Operator op,
     std::string lines = "";
 
     for (auto object : objects)
-        lines.append(std::format("{}{} {} {}\n", indent, key, OperatorsLabels.at(op), object->Serialize()));
+        lines.append(std::format("{}{} {} {}\n", indent, key, OperatorsLabels.at(op), object->Serialize(depth, false, false)));
 
     return lines;
 }

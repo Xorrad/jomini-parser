@@ -236,10 +236,10 @@ namespace Jomini {
             ObjectMap& GetMapUnsafe();
             ObjectArray& GetArrayUnsafe();
 
-            std::string Serialize(uint depth = 0, bool isInline = false) const;
-            std::string SerializeScalar(uint depth = 0) const;
-            std::string SerializeObject(uint depth = 0, bool isInline = false) const;
-            std::string SerializeArray(uint depth = 0) const;
+            std::string Serialize(uint depth = 0, bool isRoot = true, bool isInline = false) const;
+            std::string SerializeScalar(uint depth) const;
+            std::string SerializeObject(uint depth, bool isRoot, bool isInline) const;
+            std::string SerializeArray(uint depth) const;
             std::string SerializeArrayRange(const std::string& key, Operator op, uint depth = 0) const;
             std::string SerializeArrayMultiline(const std::string& key, Operator op, uint depth = 0) const;
 

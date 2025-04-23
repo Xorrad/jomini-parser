@@ -261,6 +261,18 @@ Object::Object()
 : m_Value(ObjectMap{}), m_Type(Type::OBJECT), m_Flags(Flags::NONE)
 {}
 
+Object::Object(const std::string& scalar)
+: m_Value(scalar), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
+{}
+
+Object::Object(std::string_view view)
+: m_Value(std::string(view)), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
+{}
+
+Object::Object(const char* scalar)
+: m_Value(std::string(scalar)), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
+{}
+
 Object::Object(int scalar)
 : m_Value(std::to_string(scalar)), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
@@ -273,13 +285,31 @@ Object::Object(bool scalar)
 : m_Value((scalar ? "yes" : "no")), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
 
-Object::Object(const std::string& scalar)
-: m_Value(scalar), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
-{}
-
 Object::Object(const Date& scalar)
 : m_Value((std::string) scalar), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
+
+Object::Object(const sf::Color& scalar)
+: m_Value(ObjectArray{}), m_Type(Type::ARRAY), m_Flags(Flags::RGB)
+{
+    ObjectArray& array = std::get<ObjectArray>(m_Value);
+    array.push_back(std::make_shared<Object>(scalar.r));
+    array.push_back(std::make_shared<Object>(scalar.g));
+    array.push_back(std::make_shared<Object>(scalar.b));
+    if (scalar.a != 255) array.push_back(std::make_shared<Object>(scalar.a));
+}
+
+template <typename T> Object::Object(const std::vector<T>& array)
+: m_Value(ObjectArray{}), m_Type(Type::ARRAY), m_Flags(Flags::NONE)
+{
+    for (const auto& value : array)
+        std::get<ObjectArray>(m_Value).push_back(std::make_shared<Object>(value));
+}
+template Object::Object(const std::vector<std::string>& array);
+template Object::Object(const std::vector<int>& array);
+template Object::Object(const std::vector<double>& array);
+template Object::Object(const std::vector<bool>& array);
+template Object::Object(const std::vector<Date>& array);
 
 Object::Object(const ObjectMap& objects)
 : m_Value(objects), m_Type(Type::OBJECT), m_Flags(Flags::NONE)
@@ -301,10 +331,6 @@ Object::Object(const Object& object) {
 
 Object::Object(const std::shared_ptr<Object>& object)
 : Object(*object)
-{}
-
-Object::Object(const std::string_view& view)
-: m_Value(std::string(view)), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
 
 Object::~Object() {}
@@ -487,12 +513,18 @@ template <> sf::Color Object::As() const {
 
 template <typename T> std::optional<T> Object::AsOpt() const {
     try {
-        T value = this->As<T>();
+        std::optional<T> value = std::optional<T>{this->As<T>()};
         return value;
     }
     catch (std::exception& e) {}
     return std::nullopt;
 }
+template std::optional<std::string> Object::AsOpt() const;
+template std::optional<int> Object::AsOpt() const;
+template std::optional<double> Object::AsOpt() const;
+template std::optional<bool> Object::AsOpt() const;
+template std::optional<Date> Object::AsOpt() const;
+template std::optional<sf::Color> Object::AsOpt() const;
 
 template <typename T> T Object::As(const T& defaultValue) const {
     try {
@@ -502,6 +534,12 @@ template <typename T> T Object::As(const T& defaultValue) const {
     catch (std::exception& e) {}
     return defaultValue;
 }
+template std::string Object::As(const std::string& defaultValue) const;
+template int Object::As(const int& defaultValue) const;
+template double Object::As(const double& defaultValue) const;
+template bool Object::As(const bool& defaultValue) const;
+template Date Object::As(const Date& defaultValue) const;
+template sf::Color Object::As(const sf::Color& defaultValue) const;
 
 template <typename T> std::vector<T> Object::AsArray() const {
     if (m_Type != Type::ARRAY)
@@ -518,7 +556,6 @@ template <typename T> std::vector<T> Object::AsArray() const {
     }
     return newArray;
 }
-
 template std::vector<std::string> Object::AsArray() const;
 template std::vector<int> Object::AsArray() const;
 template std::vector<double> Object::AsArray() const;
@@ -533,21 +570,31 @@ template <> std::vector<std::shared_ptr<Object>> Object::AsArray() const {
 
 template <typename T> std::optional<std::vector<T>> Object::AsArrayOpt() const {
     try {
-        T value = this->AsArray<T>();
+        std::optional<std::vector<T>> value = std::optional<std::vector<T>>{this->AsArray<T>()};
         return value;
     }
     catch (std::exception& e) {}
     return std::nullopt;
 }
+template std::optional<std::vector<std::string>> Object::AsArrayOpt() const;
+template std::optional<std::vector<int>> Object::AsArrayOpt() const;
+template std::optional<std::vector<double>> Object::AsArrayOpt() const;
+template std::optional<std::vector<bool>> Object::AsArrayOpt() const;
+template std::optional<std::vector<Date>> Object::AsArrayOpt() const;
 
 template <typename T> std::vector<T> Object::AsArray(const std::vector<T>& defaultValue) const {
     try {
-        T value = this->AsArray<T>();
+        std::vector<T> value = this->AsArray<T>();
         return value;
     }
     catch (std::exception& e) {}
     return defaultValue;
 }
+template std::vector<std::string> Object::AsArray(const std::vector<std::string>& defaultValue) const;
+template std::vector<int> Object::AsArray(const std::vector<int>& defaultValue) const;
+template std::vector<double> Object::AsArray(const std::vector<double>& defaultValue) const;
+template std::vector<bool> Object::AsArray(const std::vector<bool>& defaultValue) const;
+template std::vector<Date> Object::AsArray(const std::vector<Date>& defaultValue) const;
 
 bool Object::Contains(std::string_view key) const {
     if (m_Type == Type::SCALAR)
@@ -573,6 +620,67 @@ Operator Object::GetOperator(std::string_view key) {
     return std::get<ObjectMap>(m_Value).at(key).first;
 }
 
+template <typename T> void Object::Set(T value) {
+    if (m_Type == Type::OBJECT)
+        throw std::runtime_error("Cannot use Set on object.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Set on array.");
+    m_Value = (std::string) value;
+}
+template void Object::Set(std::string value);
+template void Object::Set(Date value);
+
+template <> void Object::Set(std::string_view value) {
+    if (m_Type == Type::OBJECT)
+        throw std::runtime_error("Cannot use Set on object.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Set on array.");
+    m_Value = std::string(value);
+}
+
+template <> void Object::Set(const char* value) {
+    if (m_Type == Type::OBJECT)
+        throw std::runtime_error("Cannot use Set on object.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Set on array.");
+    m_Value = std::string(value);
+}
+
+template <> void Object::Set(int value) {
+    if (m_Type == Type::OBJECT)
+        throw std::runtime_error("Cannot use Set on object.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Set on array.");
+    m_Value = std::to_string(value);
+}
+
+template <> void Object::Set(double value) {
+    if (m_Type == Type::OBJECT)
+        throw std::runtime_error("Cannot use Set on object.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Set on array.");
+    m_Value = std::to_string(value);
+}
+
+template <> void Object::Set(bool value) {
+    if (m_Type == Type::OBJECT)
+        throw std::runtime_error("Cannot use Set on object.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Set on array.");
+    m_Value = (value ? "yes" : "false");
+}
+
+template <> void Object::Set(sf::Color value) {
+    m_Type = Type::ARRAY;
+    m_Flags = Flags::RGB;
+    m_Value = ObjectArray{};
+    ObjectArray& array = std::get<ObjectArray>(m_Value);
+    array.push_back(std::make_shared<Object>(value.r));
+    array.push_back(std::make_shared<Object>(value.g));
+    array.push_back(std::make_shared<Object>(value.b));
+    if (value.a != 255) array.push_back(std::make_shared<Object>(value.a));
+}
+
 template <typename T> void Object::Push(T value, bool convertToArray) {
     if (m_Type != Type::ARRAY) {
         if (!convertToArray)
@@ -581,6 +689,11 @@ template <typename T> void Object::Push(T value, bool convertToArray) {
     }
     std::get<ObjectArray>(m_Value).push_back(std::make_shared<Object>(value));
 }
+template void Object::Push(std::string value, bool convertToArray);
+template void Object::Push(int value, bool convertToArray);
+template void Object::Push(double value, bool convertToArray);
+template void Object::Push(bool value, bool convertToArray);
+template void Object::Push(Date value, bool convertToArray);
 
 template <> void Object::Push(std::shared_ptr<Object> value, bool convertToArray) {
     if (m_Type != Type::ARRAY) {
@@ -606,6 +719,17 @@ template <typename T> void Object::Put(std::string_view key, T value, Operator o
         throw std::runtime_error("Cannot use Put on array.");
     std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, std::make_shared<Object>(value)));
 }
+template void Object::Put(std::string_view key, std::string value, Operator op);
+template void Object::Put(std::string_view key, int value, Operator op);
+template void Object::Put(std::string_view key, double value, Operator op);
+template void Object::Put(std::string_view key, bool value, Operator op);
+template void Object::Put(std::string_view key, Date value, Operator op);
+template void Object::Put(std::string_view key, std::vector<std::string> value, Operator op);
+template void Object::Put(std::string_view key, std::vector<int> value, Operator op);
+template void Object::Put(std::string_view key, std::vector<double> value, Operator op);
+template void Object::Put(std::string_view key, std::vector<bool> value, Operator op);
+template void Object::Put(std::string_view key, std::vector<Date> value, Operator op);
+template void Object::Put(std::string_view key, std::vector<std::shared_ptr<Object>> value, Operator op);
 
 template <> void Object::Put(std::string_view key, std::shared_ptr<Object> value, Operator op) {
     if (m_Type == Type::SCALAR)
@@ -626,8 +750,7 @@ template <typename T> void Object::Merge(std::string_view key, T value, Operator
         it->second.second->Push(std::make_shared<Object>(value), true);
     }
     else {
-        // TODO: improve this to avoid calling map.find again.
-        map.insert(key, std::make_pair(op, std::make_shared<Object>(value)));
+        map.insert_missing(key, ObjectMap::Value(op, std::make_shared<Object>(value)));
     }
 }
 
@@ -648,8 +771,7 @@ template <> void Object::Merge(std::string_view key, std::shared_ptr<Object> val
         }
     }
     else {
-        // TODO: improve this to avoid calling map.find again.
-        map.insert(key, std::make_pair(op, value));
+        map.insert_missing(key, ObjectMap::Value(op, value));
     }
 }
 

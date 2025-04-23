@@ -185,17 +185,20 @@ namespace Jomini {
     class Object {
         public:
             Object();
+            Object(const std::string& scalar);
+            Object(std::string_view view);
+            Object(const char* scalar);
             Object(int scalar);
             Object(double scalar);
             Object(bool scalar);
-            Object(const std::string& scalar);
             Object(const Date& scalar);
+            Object(const sf::Color& scalar);
+            template <typename T> Object(const std::vector<T>& array);
             Object(const ObjectMap& objects);
             Object(const ObjectArray& array);
             Object(const std::variant<std::string, ObjectMap, ObjectArray>& value);
             Object(const Object& object);
             Object(const std::shared_ptr<Object>& object);
-            Object(const std::string_view& view);
             ~Object();
 
             Type GetType() const;
@@ -222,6 +225,8 @@ namespace Jomini {
             std::shared_ptr<Object> Get(std::string_view key);
             Operator GetOperator(std::string_view key);
             
+            template <typename T> void Set(T value);
+
             template <typename T> void Push(T value, bool convertToArray = false);
             void Remove(std::string_view key);
 

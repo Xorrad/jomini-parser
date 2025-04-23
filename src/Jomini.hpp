@@ -38,7 +38,8 @@ namespace Jomini {
     enum class Type {
         SCALAR,
         OBJECT,
-        ARRAY
+        ARRAY,
+        NONE
     };
 
     enum class Operator {
@@ -185,6 +186,7 @@ namespace Jomini {
     class Object {
         public:
             Object();
+            Object(Type type);
             Object(const std::string& scalar);
             Object(std::string_view view);
             Object(const char* scalar);

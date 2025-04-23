@@ -637,3 +637,16 @@ TEST_CASE("[misc_constructors] misc object constructors") {
     CHECK(o_ptr->GetFlags() == Flags::NONE);
     CHECK(o_ptr->As<std::string>() == "string");
 }
+
+TEST_CASE("[undefined_object] undefined objects behaviour for getters and setters") {
+    auto o_map = std::make_shared<Object>(ObjectMap{{std::make_pair("key", std::make_pair(Operator::LESS, std::make_shared<Object>("value")))}});
+
+    CHECK_NOTHROW(o_map->Get("key")->As<std::string>());
+    CHECK_NOTHROW(o_map->Get("notkey"));
+    CHECK(o_map->Get("notkey")->GetType() == Type::NONE);
+    CHECK_THROWS(o_map->Get("notkey")->As<std::string>());
+    CHECK_NOTHROW(o_map->Get("notkey")->As<std::string>("default"));
+    // CHECK_NOTHROW(o_map->Get("notkey")->Push(std::string("test")));
+    // CHECK(o_map->Get("notkey")->GetType() == Type::ARRAY);
+    // CHECK(SerializeVector(o_map->Get("notkey")->AsArray<std::string>()) == "{ test }");
+}

@@ -261,6 +261,14 @@ Object::Object()
 : m_Value(ObjectMap{}), m_Type(Type::OBJECT), m_Flags(Flags::NONE)
 {}
 
+Object::Object(Type type)
+: m_Type(type), m_Flags(Flags::NONE)
+{
+    if (type == Type::SCALAR) m_Value = std::string();
+    else if (type == Type::OBJECT) m_Value = ObjectMap{};
+    else if (type == Type::ARRAY) m_Value = ObjectArray{};
+}
+
 Object::Object(const std::string& scalar)
 : m_Value(scalar), m_Type(Type::SCALAR), m_Flags(Flags::NONE)
 {}
@@ -601,6 +609,8 @@ bool Object::Contains(std::string_view key) const {
         throw std::runtime_error("Cannot use Contains on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Contains on array.");
+    if (m_Type == Type::NONE)
+        return false;
     return std::get<ObjectMap>(m_Value).contains(key);
 }
 
@@ -609,7 +619,10 @@ std::shared_ptr<Object> Object::Get(std::string_view key) {
         throw std::runtime_error("Cannot use Get on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Get on array.");
-    return std::get<ObjectMap>(m_Value).at(key).second;
+    auto it = std::get<ObjectMap>(m_Value).find(key);
+    if (m_Type == Type::NONE || it == std::get<ObjectMap>(m_Value).end())
+        return std::make_shared<Object>(Type::NONE);
+    return it->second.second;
 }
 
 Operator Object::GetOperator(std::string_view key) {
@@ -617,7 +630,10 @@ Operator Object::GetOperator(std::string_view key) {
         throw std::runtime_error("Cannot use GetOperator on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use GetOperator on array.");
-    return std::get<ObjectMap>(m_Value).at(key).first;
+    auto it = std::get<ObjectMap>(m_Value).find(key);
+    if (m_Type == Type::NONE || it == std::get<ObjectMap>(m_Value).end())
+        return Operator::EQUAL;
+    return it->second.first;
 }
 
 template <typename T> void Object::Set(T value) {
@@ -625,6 +641,7 @@ template <typename T> void Object::Set(T value) {
         throw std::runtime_error("Cannot use Set on object.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Set on array.");
+    m_Type = Type::SCALAR;
     m_Value = (std::string) value;
 }
 template void Object::Set(std::string value);
@@ -635,6 +652,7 @@ template <> void Object::Set(std::string_view value) {
         throw std::runtime_error("Cannot use Set on object.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Set on array.");
+    m_Type = Type::SCALAR;
     m_Value = std::string(value);
 }
 
@@ -643,6 +661,7 @@ template <> void Object::Set(const char* value) {
         throw std::runtime_error("Cannot use Set on object.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Set on array.");
+    m_Type = Type::SCALAR;
     m_Value = std::string(value);
 }
 
@@ -651,6 +670,7 @@ template <> void Object::Set(int value) {
         throw std::runtime_error("Cannot use Set on object.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Set on array.");
+    m_Type = Type::SCALAR;
     m_Value = std::to_string(value);
 }
 
@@ -659,6 +679,7 @@ template <> void Object::Set(double value) {
         throw std::runtime_error("Cannot use Set on object.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Set on array.");
+    m_Type = Type::SCALAR;
     m_Value = std::to_string(value);
 }
 
@@ -667,6 +688,7 @@ template <> void Object::Set(bool value) {
         throw std::runtime_error("Cannot use Set on object.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Set on array.");
+    m_Type = Type::SCALAR;
     m_Value = (value ? "yes" : "false");
 }
 
@@ -682,7 +704,11 @@ template <> void Object::Set(sf::Color value) {
 }
 
 template <typename T> void Object::Push(T value, bool convertToArray) {
-    if (m_Type != Type::ARRAY) {
+    if (m_Type == Type::NONE) {
+        m_Type = Type::ARRAY;
+        m_Value = ObjectArray{};
+    }
+    else if (m_Type != Type::ARRAY) {
         if (!convertToArray)
             throw std::runtime_error("Cannot use Push on scalar or object.");
         this->ConvertToArray();
@@ -696,7 +722,11 @@ template void Object::Push(bool value, bool convertToArray);
 template void Object::Push(Date value, bool convertToArray);
 
 template <> void Object::Push(std::shared_ptr<Object> value, bool convertToArray) {
-    if (m_Type != Type::ARRAY) {
+    if (m_Type == Type::NONE) {
+        m_Type = Type::ARRAY;
+        m_Value = ObjectArray{};
+    }
+    else if (m_Type != Type::ARRAY) {
         if (!convertToArray)
             throw std::runtime_error("Cannot use Push on scalar or object.");
         this->ConvertToArray();
@@ -709,6 +739,8 @@ void Object::Remove(std::string_view key) {
         throw std::runtime_error("Cannot use Remove on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Remove on array.");
+    if (m_Type == Type::NONE)
+        return;
     std::get<ObjectMap>(m_Value).erase(key);
 }
 
@@ -717,6 +749,10 @@ template <typename T> void Object::Put(std::string_view key, T value, Operator o
         throw std::runtime_error("Cannot use Put on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Put on array.");
+    if (m_Type == Type::NONE) {
+        m_Type = Type::OBJECT;
+        m_Value = ObjectMap{};
+    }
     std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, std::make_shared<Object>(value)));
 }
 template void Object::Put(std::string_view key, std::string value, Operator op);
@@ -736,6 +772,10 @@ template <> void Object::Put(std::string_view key, std::shared_ptr<Object> value
         throw std::runtime_error("Cannot use Put on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Put on array.");
+    if (m_Type == Type::NONE) {
+        m_Type = Type::OBJECT;
+        m_Value = ObjectMap{};
+    }
     std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, value));
 }
 
@@ -744,6 +784,10 @@ template <typename T> void Object::Merge(std::string_view key, T value, Operator
         throw std::runtime_error("Cannot use Merge on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Merge on array.");
+    if (m_Type == Type::NONE) {
+        m_Type = Type::OBJECT;
+        m_Value = ObjectMap{};
+    }
     ObjectMap& map = std::get<ObjectMap>(m_Value);
     auto it = map.find(key);
     if (it != map.end()) {
@@ -759,6 +803,10 @@ template <> void Object::Merge(std::string_view key, std::shared_ptr<Object> val
         throw std::runtime_error("Cannot use Merge on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use Merge on array.");
+    if (m_Type == Type::NONE) {
+        m_Type = Type::OBJECT;
+        m_Value = ObjectMap{};
+    }
     ObjectMap& map = std::get<ObjectMap>(m_Value);
     auto it = map.find(key);
     if (it != map.end()) {
@@ -811,6 +859,10 @@ std::string& Object::GetString() {
         throw std::runtime_error("Cannot use GetString on object.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use GetString on array.");
+    if (m_Type == Type::NONE) {
+        m_Type = Type::SCALAR;
+        m_Value = std::string();
+    }
     return std::get<std::string>(m_Value);
 }
 
@@ -819,6 +871,10 @@ ObjectMap& Object::GetMap() {
         throw std::runtime_error("Cannot use GetMap on scalar.");
     if (m_Type == Type::ARRAY)
         throw std::runtime_error("Cannot use GetMap on array.");
+    if (m_Type == Type::NONE) {
+        m_Type = Type::OBJECT;
+        m_Value = ObjectMap{};
+    }
     return std::get<ObjectMap>(m_Value);
 }
 
@@ -827,6 +883,10 @@ ObjectArray& Object::GetArray() {
         throw std::runtime_error("Cannot use GetArray on scalar.");
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetArray on object.");
+    if (m_Type == Type::NONE) {
+        m_Type = Type::ARRAY;
+        m_Value = ObjectMap{};
+    }
     return std::get<ObjectArray>(m_Value);
 }
 
@@ -839,6 +899,8 @@ ObjectArray& Object::GetArrayUnsafe() {
 }
 
 std::string Object::Serialize(uint depth, bool isRoot, bool isInline) const {
+    if (m_Type == Type::NONE)
+        return "";
     if (m_Type == Type::OBJECT)
         return this->SerializeObject(depth, isRoot, isInline);
     if (m_Type == Type::ARRAY)

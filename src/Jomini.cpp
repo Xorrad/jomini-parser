@@ -1089,6 +1089,11 @@ void Reader::Open(std::istream& stream) {
     m_Buffer.resize(static_cast<size_t>(size));
     stream.read(m_Buffer.data(), size);
 
+    // Ignore first three UTF8 BOM bytes.
+    if (m_Buffer.size() > 2 && m_Buffer.at(0) == '\xEF' && m_Buffer.at(1) == '\xBB' && m_Buffer.at(2) == '\xBF') {
+        m_Buffer = m_Buffer.substr(3, m_Buffer.size()-3);
+    }
+
     // Initialize the string view using the buffer.
     m_View = std::string_view(m_Buffer);
 }

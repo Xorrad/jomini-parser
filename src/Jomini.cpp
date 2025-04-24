@@ -1062,7 +1062,7 @@ Reader::Reader(std::string filePath) : Reader() {}
 Reader::~Reader() {}
 
 void Reader::OpenFile(std::string filePath) {
-    std::ifstream file(filePath);
+    std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open())
         return;
     this->Open(file);

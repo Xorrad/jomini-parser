@@ -499,11 +499,12 @@ template <> sf::Color Object::As() const {
     if (array.size() < 3)
         throw std::runtime_error("Invalid conversion of object to sf::Color.");
     try {
-        if (this->HasFlag(Flags::HSV)) {
-            double h = array.at(0)->As<double>();
-            double s = array.at(1)->As<double>();
-            double v = array.at(2)->As<double>();
-            double a = (array.size() > 3) ? array.at(3)->As<double>() : 1.0;
+        if (this->HasFlag(Flags::HSV) || array.at(0)->GetString().find('.') != std::string::npos) {
+            #define CLAMP(v) std::min(1.0, std::max(0.0, v))
+            double h = CLAMP(array.at(0)->As<double>());
+            double s = CLAMP(array.at(1)->As<double>());
+            double v = CLAMP(array.at(2)->As<double>());
+            double a = (array.size() > 3) ? CLAMP(array.at(3)->As<double>()) : 1.0;
             return ColorFromHsv(h, s, v, a);
         }
         else {

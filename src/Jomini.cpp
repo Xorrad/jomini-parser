@@ -1127,7 +1127,7 @@ bool Reader::Match(char expected) {
 }
 
 std::string_view Reader::ReadUntil(const std::function<bool(char)>& predicate, bool includePrevious, bool includeLast) {
-    if (m_CurrentGlobalCursor >= m_View.size())
+    if (m_CurrentGlobalCursor >= m_View.size()+includePrevious)
         return std::string_view{};
     size_t start = m_CurrentGlobalCursor - (size_t) includePrevious;
     size_t end = start + (size_t) includePrevious;

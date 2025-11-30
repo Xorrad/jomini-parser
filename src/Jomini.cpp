@@ -1454,14 +1454,33 @@ std::shared_ptr<Object> Parser::Parse(int depth) {
             if (IS_BRACE(ch))
                 THROW_ERROR("unexpected closing brace '}' after operator inside key-value block", "unexpected closing brace", 0);
             std::string_view buffer = m_Reader.ReadUntil((ch == '"' ? quotePredicate : blankPredicate), true, ch == '"');
+            
+            // Ignore flags if the buffer is larger than 'RANGE' (i.e 5 characters).
+            if (buffer.size() > 5) {
+                mainObject->MergeUnsafe(key, std::make_shared<Object>(buffer), op);
+                key = "";
+                state = 1;
+                continue;
+            }
+
+            constexpr auto EqualsIgnoreCase = [](std::string_view sv, std::string_view lit) {
+                if (sv.size() != lit.size())
+                    return false;
+                for (std::size_t i = 0; i < sv.size(); i++) {
+                    if (sv[i] != lit[i] && char(sv[i] + ('a' - 'A')) != lit[i])
+                        return false;
+                }
+                return true;
+            };
+
             // Check if the value correspond to an array flag.
-            if (buffer == "rgb")
+            if (EqualsIgnoreCase(buffer, "rgb"))
                 flags = Flags::RGB;
-            else if (buffer == "hsv")
+            else if (EqualsIgnoreCase(buffer, "hsv"))
                 flags = Flags::HSV;
-            else if (buffer == "LIST")
+            else if (EqualsIgnoreCase(buffer, "list"))
                 flags = Flags::LIST;
-            else if (buffer == "RANGE")
+            else if (EqualsIgnoreCase(buffer, "range"))
                 flags = Flags::RANGE;
             else {
                 mainObject->MergeUnsafe(key, std::make_shared<Object>(buffer), op);

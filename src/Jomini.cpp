@@ -899,7 +899,7 @@ ObjectArray& Object::GetArrayUnsafe() {
     return std::get<ObjectArray>(m_Value);
 }
 
-std::string Object::Serialize(uint depth, bool isRoot, bool isInline) const {
+std::string Object::Serialize(uint32_t depth, bool isRoot, bool isInline) const {
     if (m_Type == Type::NONE)
         return "";
     if (m_Type == Type::OBJECT)
@@ -909,13 +909,13 @@ std::string Object::Serialize(uint depth, bool isRoot, bool isInline) const {
     return this->SerializeScalar(depth);
 }
 
-std::string Object::SerializeScalar(uint depth) const {
+std::string Object::SerializeScalar(uint32_t depth) const {
     if (m_Type != Type::SCALAR)
         return "";
     return std::get<std::string>(m_Value);
 }
 
-std::string Object::SerializeObject(uint depth, bool isRoot, bool isInline) const {
+std::string Object::SerializeObject(uint32_t depth, bool isRoot, bool isInline) const {
     if (m_Type != Type::OBJECT)
         return "";  
     const ObjectMap& map = std::get<ObjectMap>(m_Value);
@@ -961,7 +961,7 @@ std::string Object::SerializeObject(uint depth, bool isRoot, bool isInline) cons
     return std::format("{{\n{}\n{}}}", lines, std::string(depth-1, '\t'));
 }
 
-std::string Object::SerializeArray(uint depth) const {
+std::string Object::SerializeArray(uint32_t depth) const {
     if (m_Type != Type::ARRAY)
         return "";
     const ObjectArray& array = std::get<ObjectArray>(m_Value);
@@ -997,7 +997,7 @@ std::string Object::SerializeArray(uint depth) const {
     return lines;
 }
 
-std::string Object::SerializeArrayRange(const std::string& key, Operator op, uint depth) const {
+std::string Object::SerializeArrayRange(const std::string& key, Operator op, uint32_t depth) const {
     std::vector<int> l = this->AsArray<int>();
     std::vector<int> loneNumbers;
     std::string indent = std::string(depth, '\t');
@@ -1041,7 +1041,7 @@ std::string Object::SerializeArrayRange(const std::string& key, Operator op, uin
     return lines;
 }
 
-std::string Object::SerializeArrayMultiline(const std::string& key, Operator op, uint depth) const {
+std::string Object::SerializeArrayMultiline(const std::string& key, Operator op, uint32_t depth) const {
     std::vector<std::shared_ptr<Object>> objects = std::get<ObjectArray>(m_Value);
     std::string indent = std::string(depth, '\t');
     std::string lines = "";
@@ -1156,11 +1156,11 @@ std::string_view Reader::GetView() const {
     return m_View;
 }
 
-std::string_view Reader::GetLine(uint line) const {
+std::string_view Reader::GetLine(uint32_t line) const {
     // This code does not need to be performant as
     // it is only used if an exception is raised.
     size_t start = 0;
-    for (uint n = 0; n < line; n++) {
+    for (uint32_t n = 0; n < line; n++) {
         size_t pos = m_View.find('\n', start);
         if (pos == std::string_view::npos)
             return {};
@@ -1170,11 +1170,11 @@ std::string_view Reader::GetLine(uint line) const {
     return m_View.substr(start, (end == std::string_view::npos ? m_View.size() : end) - start);
 }
 
-uint Reader::GetCurrentLine() const {
+uint32_t Reader::GetCurrentLine() const {
     return m_CurrentLine;
 }
 
-uint Reader::GetCurrentCursor() const {
+uint32_t Reader::GetCurrentCursor() const {
     return m_CurrentCursor;
 }
 

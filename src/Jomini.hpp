@@ -110,6 +110,8 @@ namespace sf {
         operator std::string() const { return std::format("({}, {}, {}, {})", r, g, b, a); };
     };
 }
+#else
+#include <SFML/Graphics.hpp>
 #endif
 
 namespace Jomini {
@@ -244,12 +246,12 @@ namespace Jomini {
             ObjectMap& GetMapUnsafe();
             ObjectArray& GetArrayUnsafe();
 
-            std::string Serialize(uint depth = 0, bool isRoot = true, bool isInline = false) const;
-            std::string SerializeScalar(uint depth) const;
-            std::string SerializeObject(uint depth, bool isRoot, bool isInline) const;
-            std::string SerializeArray(uint depth) const;
-            std::string SerializeArrayRange(const std::string& key, Operator op, uint depth = 0) const;
-            std::string SerializeArrayMultiline(const std::string& key, Operator op, uint depth = 0) const;
+            std::string Serialize(uint32_t depth = 0, bool isRoot = true, bool isInline = false) const;
+            std::string SerializeScalar(uint32_t depth) const;
+            std::string SerializeObject(uint32_t depth, bool isRoot, bool isInline) const;
+            std::string SerializeArray(uint32_t depth) const;
+            std::string SerializeArrayRange(const std::string& key, Operator op, uint32_t depth = 0) const;
+            std::string SerializeArrayMultiline(const std::string& key, Operator op, uint32_t depth = 0) const;
 
         private:
             std::variant<std::string, ObjectMap, ObjectArray> m_Value;
@@ -280,10 +282,10 @@ namespace Jomini {
             void SkipUntil(const std::function<bool(char)>& predicate);
 
             std::string_view GetView() const;
-            std::string_view GetLine(uint line) const;
+            std::string_view GetLine(uint32_t line) const;
 
-            uint GetCurrentLine() const;
-            uint GetCurrentCursor() const;
+            uint32_t GetCurrentLine() const;
+            uint32_t GetCurrentCursor() const;
 
         private:
             void IncrementLine();
@@ -291,9 +293,9 @@ namespace Jomini {
             std::string m_Buffer;
             std::string_view m_View;
 
-            uint m_CurrentLine;
-            uint m_CurrentCursor;
-            uint m_CurrentGlobalCursor;
+            uint32_t m_CurrentLine;
+            uint32_t m_CurrentCursor;
+            uint32_t m_CurrentGlobalCursor;
 
     };
 

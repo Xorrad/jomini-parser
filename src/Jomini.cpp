@@ -626,6 +626,24 @@ std::shared_ptr<Object> Object::Get(std::string_view key) {
     return it->second.second;
 }
 
+std::shared_ptr<Object> Object::GetFirst(std::string_view key) {
+    if (m_Type == Type::SCALAR)
+        throw std::runtime_error("Cannot use Get on scalar.");
+    if (m_Type == Type::ARRAY)
+        throw std::runtime_error("Cannot use Get on array.");
+    auto it = std::get<ObjectMap>(m_Value).find(key);
+    if (m_Type == Type::NONE || it == std::get<ObjectMap>(m_Value).end())
+        return std::make_shared<Object>(Type::NONE);
+    if (it->second.second->GetType() == Type::ARRAY) {
+        ObjectArray array = std::get<ObjectArray>(it->second.second->m_Value);
+        if (!array.empty())
+            return array.front();
+        else
+            return std::make_shared<Object>(Type::NONE);
+	}
+    return it->second.second;
+}
+
 Operator Object::GetOperator(std::string_view key) {
     if (m_Type == Type::SCALAR)
         throw std::runtime_error("Cannot use GetOperator on scalar.");

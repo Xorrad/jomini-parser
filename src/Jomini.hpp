@@ -228,6 +228,7 @@ namespace Jomini {
 
             bool Contains(std::string_view key) const;
             std::shared_ptr<Object> Get(std::string_view key);
+			std::shared_ptr<Object> GetFirst(std::string_view key); // Returns the first object if it is an array, otherwise returns the object itself.
             Operator GetOperator(std::string_view key);
             
             template <typename T> void Set(T value);

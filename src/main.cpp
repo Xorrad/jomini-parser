@@ -650,3 +650,42 @@ TEST_CASE("[undefined_object] undefined objects behaviour for getters and setter
     // CHECK(o_map->Get("notkey")->GetType() == Type::ARRAY);
     // CHECK(SerializeVector(o_map->Get("notkey")->AsArray<std::string>()) == "{ test }");
 }
+
+TEST_CASE("[flatten] flatten an array into an object") {
+    std::shared_ptr<Object> object = ParseFile("tests/31_flatten.txt");
+    
+    object->Get("key1")->Get("1.1.1")->Flatten();
+    REQUIRE(object->Get("key1")->Contains("1.1.1"));
+    REQUIRE(object->Get("key1")->Get("1.1.1")->Is(Type::OBJECT));
+    CHECK(object->Get("key1")->Get("1.1.1")->Serialize(0, true, true) == "culture = breton\nculture = french\n religion = catholic");
+    CHECK(object->Get("key1")->Contains("1.1.2"));
+    
+    std::string key2 = R"(	1.1.3 = {
+	culture = breton
+	religion = catholic
+}
+	1.1.3 = {
+	religion = hellenic
+}
+	1.1.3 = {
+	culture = french
+}
+	1.1.3 = {
+	culture = roman
+	religion = pagan
+}
+
+	1.1.4 = {
+		culture = norse
+		religion = insular
+	})";
+    object->Get("key2")->Flatten();
+    REQUIRE(object->Contains("key2"));
+    REQUIRE(object->Get("key2")->Is(Type::OBJECT));
+    CHECK(object->Get("key2")->Serialize(1, true) == key2);
+
+    object->Get("key2")->Get("1.1.3")->Flatten();
+    REQUIRE(object->Get("key2")->Contains("1.1.3"));
+    REQUIRE(object->Get("key2")->Get("1.1.3")->Is(Type::OBJECT));
+    CHECK(object->Get("key2")->Get("1.1.3")->Serialize(0, true, true) == "culture = breton\nculture = french\nculture = roman\n religion = catholic\nreligion = hellenic\nreligion = pagan\n");
+}

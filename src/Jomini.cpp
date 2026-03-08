@@ -873,6 +873,28 @@ template <> void Object::MergeUnsafe(std::string_view key, std::shared_ptr<Objec
     }
 }
 
+void Object::Flatten() {
+    if (m_Type == Type::NONE)
+        return;
+    if (m_Type != Type::ARRAY)
+        throw std::runtime_error("Cannot use Flatten on object or scalar.");
+        
+    Object merged = Object(ObjectMap{});
+    const ObjectArray& array = std::get<ObjectArray>(m_Value);
+
+    for (auto& data : array) {
+        if (!data->Is(Jomini::Type::OBJECT))
+            continue;
+        
+        for (auto& [key, pair] : data->GetMapUnsafe()) {
+            merged.MergeUnsafe(key, pair.second, pair.first);
+        }
+    }
+
+    m_Type = Type::OBJECT;
+    m_Value = std::move(merged.m_Value);
+}
+
 std::string& Object::GetString() {
     if (m_Type == Type::OBJECT)
         throw std::runtime_error("Cannot use GetString on object.");

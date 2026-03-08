@@ -1,0 +1,36 @@
+key1 = {
+    1.1.1 = {
+        culture = breton
+        religion = catholic
+    }
+    1.1.1 = {
+        culture = french
+    }
+    1.1.2 = {
+        culture = breton
+        religion = catholic
+    }
+}
+
+key2 = {
+    1.1.3 = {
+        culture = breton
+        religion = catholic
+    }
+    1.1.3 = {
+        religion = hellenic
+    }
+    1.1.3 = {
+        culture = french
+    }
+}
+key2 = {
+    1.1.3 = {
+        culture = roman
+        religion = pagan
+    }
+    1.1.4 = {
+        culture = norse
+        religion = insular
+    }
+}

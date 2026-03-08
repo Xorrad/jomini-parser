@@ -240,6 +240,9 @@ namespace Jomini {
             template <typename T> void Merge(std::string_view key, T value, Operator op = Operator::EQUAL);
             template <typename T> void MergeUnsafe(std::string_view key, T value, Operator op = Operator::EQUAL);
 
+
+            void Flatten(); // Flatten an array of objects into a single object containing the pairs of both.
+
             std::string& GetString();
             ObjectMap& GetMap();
             ObjectArray& GetArray();

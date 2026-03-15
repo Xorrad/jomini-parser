@@ -114,11 +114,24 @@ ObjectMap::ObjectMap(const std::unordered_map<std::string, Value>& entries) {
         this->insert(key, value);
 }
 
+ObjectMap::ObjectMap(const ObjectMap& other) {
+    m_Items = other.m_Items;
+    for (auto it = m_Items.begin(); it != m_Items.end(); it++) {
+        m_Index.emplace(it->first, it);
+    }
+}
+
+ObjectMap& ObjectMap::operator=(ObjectMap other) {
+    std::swap(m_Items, other.m_Items);
+    std::swap(m_Index, other.m_Index);
+    return *this;
+}
+
 void ObjectMap::insert(const std::string& key, const Value& value) {
     auto it = m_Index.find(key);
     if (it == m_Index.end()) {
         m_Items.emplace_back(key, value);
-        m_Index.emplace(key, --m_Items.end());
+        m_Index.emplace(key, std::prev(m_Items.end()));
     } else {
         it->second->second = value;
     }
@@ -129,7 +142,7 @@ void ObjectMap::insert(std::string_view key, const Value& value) {
     if (it == m_Index.end()) {
         std::string str(key);
         m_Items.emplace_back(str, value);
-        m_Index.emplace(str, --m_Items.end());
+        m_Index.emplace(str, std::prev(m_Items.end()));
     } else {
         it->second->second = value;
     }
@@ -138,7 +151,7 @@ void ObjectMap::insert(std::string_view key, const Value& value) {
 void ObjectMap::insert_missing(std::string_view key, const Value& value) {
     std::string str(key);    
     m_Items.emplace_back(str, value);
-    m_Index.emplace(str, --m_Items.end());
+    m_Index.emplace(str, std::prev(m_Items.end()));
 }
 
 template <typename K> void ObjectMap::erase(const K& key) {
@@ -173,7 +186,7 @@ ObjectMap::Value& ObjectMap::operator[](std::string_view key) {
     if (it == m_Index.end()) {
         std::string str = std::string(key);
         m_Items.emplace_back(str, s_DefaultValue);
-        m_Index.emplace(str, --m_Items.end());
+        m_Index.emplace(str, std::prev(m_Items.end()));
         return m_Items.back().second;
     }
     return it->second->second;
@@ -334,7 +347,7 @@ Object::Object(const std::variant<std::string, ObjectMap, ObjectArray>& value)
 Object::Object(const Object& object) {
     std::shared_ptr<Object> copy = object.Copy();
     m_Type = copy->m_Type;
-    m_Value = copy->m_Value;
+    m_Value = std::move(copy->m_Value);
 }
 
 Object::Object(const std::shared_ptr<Object>& object)
@@ -352,18 +365,25 @@ bool Object::Is(Type type) const {
 }
 
 std::shared_ptr<Object> Object::Copy() const {
-    if (m_Type == Type::SCALAR) {
-        return std::make_shared<Object>(m_Value);
+    std::shared_ptr<Object> copy = std::make_shared<Object>(m_Type);
+    if (m_Type == Type::NONE) {
+
+    }
+    else if (m_Type == Type::SCALAR) {
+        copy->m_Value = m_Value;
+        copy->m_Flags = m_Flags;
     }
     else if (m_Type == Type::OBJECT) {
         // Make a deep copy of each objects in the original map.
         const ObjectMap& originalObjects = std::get<ObjectMap>(m_Value);
         ObjectMap objects;
+        objects.reserve(originalObjects.size());
         for (auto [key, pair] : originalObjects) {
             auto [op, value] = pair;
-            objects.insert(key, std::make_pair(op, value->Copy()));
+            objects.insert_missing(key, std::make_pair(op, value->Copy()));
         }
-        return std::make_shared<Object>(objects);
+        copy->m_Value = std::move(objects);
+        copy->m_Flags = m_Flags;
     }
     else if (m_Type == Type::ARRAY) {
         // Make a deep copy of each objects in the original array.
@@ -372,9 +392,10 @@ std::shared_ptr<Object> Object::Copy() const {
         array.reserve(originalArray.size());
         for (auto object : originalArray)
             array.push_back(object->Copy());
-        return std::make_shared<Object>(array);
+        copy->m_Value = std::move(array);
+        copy->m_Flags = m_Flags;
     }
-    return nullptr;
+    return copy;
 }
 
 Flags Object::GetFlags() const {
@@ -775,6 +796,7 @@ template <typename T> void Object::Put(std::string_view key, T value, Operator o
     std::get<ObjectMap>(m_Value).insert(key, std::make_pair(op, std::make_shared<Object>(value)));
 }
 template void Object::Put(std::string_view key, std::string value, Operator op);
+template void Object::Put(std::string_view key, const char* value, Operator op);
 template void Object::Put(std::string_view key, int value, Operator op);
 template void Object::Put(std::string_view key, double value, Operator op);
 template void Object::Put(std::string_view key, bool value, Operator op);
@@ -873,26 +895,36 @@ template <> void Object::MergeUnsafe(std::string_view key, std::shared_ptr<Objec
     }
 }
 
-void Object::Flatten() {
+std::shared_ptr<Object> Object::Flatten(bool ignoreDuplicate) const {
     if (m_Type == Type::NONE)
-        return;
+        return std::make_shared<Object>(Type::NONE);
     if (m_Type != Type::ARRAY)
-        throw std::runtime_error("Cannot use Flatten on object or scalar.");
+        return this->Copy();
         
-    Object merged = Object(ObjectMap{});
+    std::shared_ptr<Object> merged = std::make_shared<Object>(ObjectMap{});
     const ObjectArray& array = std::get<ObjectArray>(m_Value);
 
     for (auto& data : array) {
         if (!data->Is(Jomini::Type::OBJECT))
             continue;
         
-        for (auto& [key, pair] : data->GetMapUnsafe()) {
-            merged.MergeUnsafe(key, pair.second, pair.first);
+        if (ignoreDuplicate) {
+            for (auto& [key, pair] : data->GetMapUnsafe()) {
+                if (merged->Contains(key))
+                    continue;
+                merged->MergeUnsafe(key, pair.second->Copy(), pair.first);
+            }
+        }
+        else {
+            for (auto& [key, pair] : data->GetMapUnsafe()) {
+                merged->MergeUnsafe(key, pair.second->Copy(), pair.first);
+            }
         }
     }
 
-    m_Type = Type::OBJECT;
-    m_Value = std::move(merged.m_Value);
+    // m_Type = Type::OBJECT;
+    // m_Value = std::move(merged.m_Value);
+    return merged;
 }
 
 std::string& Object::GetString() {
@@ -978,9 +1010,7 @@ std::string Object::SerializeObject(uint32_t depth, bool isRoot, bool isInline) 
             continue;
         }
         else if (it->second.second->HasFlag(Flags::MULTILINE)) {
-            lines.append(
-                it->second.second->SerializeArrayMultiline(it->first, it->second.first, depth)
-            );
+            lines.append(it->second.second->SerializeArrayMultiline(it->first, it->second.first, depth));
             continue;
         }
 
@@ -1027,7 +1057,7 @@ std::string Object::SerializeArray(uint32_t depth) const {
     }
 
     if (hasObjectOrArray)
-        lines.append("\n" + std::string(std::max(0U, depth-1), '\t'));
+        lines.append("\n" + std::string(((depth > 0) ? depth-1 : 0), '\t'));
     else if (this->HasFlag(Flags::HSV))
         lines = "hsv " + lines;
     else if (this->HasFlag(Flags::RGB))
@@ -1086,8 +1116,9 @@ std::string Object::SerializeArrayMultiline(const std::string& key, Operator op,
     std::string indent = std::string(depth, '\t');
     std::string lines = "";
 
-    for (auto object : objects)
-        lines.append(std::format("{}{} {} {}\n", indent, key, OperatorsLabels.at(op), object->Serialize(depth, false, false)));
+    for (auto object : objects) {
+        lines.append(std::format("{}{} {} {}\n", indent, key, OperatorsLabels.at(op), object->Serialize(depth+1, false, false)));
+    }
 
     return lines;
 }

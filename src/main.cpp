@@ -651,41 +651,170 @@ TEST_CASE("[undefined_object] undefined objects behaviour for getters and setter
     // CHECK(SerializeVector(o_map->Get("notkey")->AsArray<std::string>()) == "{ test }");
 }
 
+TEST_CASE("[copy] deep-copy an object") {
+    SUBCASE("Type::NONE") {
+        auto o = std::make_shared<Object>(Type::NONE);
+        
+        auto oc = o->Copy();
+        CHECK(oc->Is(Type::NONE));
+
+        oc->Put("test", "hello world");
+
+        CHECK(o->Is(Type::NONE));
+        REQUIRE(oc->Is(Type::OBJECT));
+        REQUIRE(oc->Contains("test"));
+        CHECK(oc->Get("test")->As<std::string>() == "hello world");
+    }
+    
+    SUBCASE("Type::SCALAR") {
+        auto o = std::make_shared<Object>("test1");
+        
+        auto oc = o->Copy();
+        CHECK(oc->Is(Type::SCALAR));
+
+        oc->Set("test2");
+
+        REQUIRE(o->Is(Type::SCALAR));
+        CHECK(o->As<std::string>() == "test1");
+
+        REQUIRE(oc->Is(Type::SCALAR));
+        CHECK(oc->As<std::string>() == "test2");
+    }
+
+    SUBCASE("Type::OBJECT") {
+        auto o1 = std::make_shared<Object>(Type::OBJECT);
+        o1->Put("val", "1234");
+
+        auto o = std::make_shared<Object>(Type::OBJECT);
+        o->Put("object", o1);
+        o->Put("test", "hello world");
+        
+        auto oc = o->Copy();
+        REQUIRE(oc->Is(Type::OBJECT));
+        
+        oc->Get("test")->Set("mimic");
+        oc->Put("test2", "abcdef");
+        oc->Get("object")->Put("val", "changed");
+        
+        REQUIRE(o->Is(Type::OBJECT));
+        REQUIRE(o->Contains("test"));
+        CHECK(o->Get("test")->As<std::string>() == "hello world");
+        REQUIRE(o->Contains("object"));
+        REQUIRE(o->Get("object")->Contains("val"));
+        CHECK(o->Get("object")->Get("val")->As<std::string>() == "1234");
+        CHECK_FALSE(o->Contains("test2"));
+
+        REQUIRE(oc->Is(Type::OBJECT));
+        REQUIRE(oc->Contains("test"));
+        CHECK(oc->Get("test")->As<std::string>() == "mimic");
+        REQUIRE(oc->Contains("object"));
+        REQUIRE(oc->Get("object")->Contains("val"));
+        CHECK(oc->Get("object")->Get("val")->As<std::string>() == "changed");
+        REQUIRE(oc->Contains("test2"));
+        CHECK(oc->Get("test2")->As<std::string>() == "abcdef");
+    }
+}
+
 TEST_CASE("[flatten] flatten an array into an object") {
-    std::shared_ptr<Object> object = ParseFile("tests/31_flatten.txt");
-    
-    object->Get("key1")->Get("1.1.1")->Flatten();
-    REQUIRE(object->Get("key1")->Contains("1.1.1"));
-    REQUIRE(object->Get("key1")->Get("1.1.1")->Is(Type::OBJECT));
-    CHECK(object->Get("key1")->Get("1.1.1")->Serialize(0, true, true) == "culture = breton\nculture = french\n religion = catholic");
-    CHECK(object->Get("key1")->Contains("1.1.2"));
-    
-    std::string key2 = R"(	1.1.3 = {
-	culture = breton
-	religion = catholic
-}
-	1.1.3 = {
-	religion = hellenic
-}
-	1.1.3 = {
-	culture = french
-}
-	1.1.3 = {
-	culture = roman
-	religion = pagan
-}
+    auto root = ParseFile("tests/31_flatten.txt");
+    REQUIRE(root != nullptr);
 
-	1.1.4 = {
-		culture = norse
-		religion = insular
-	})";
-    object->Get("key2")->Flatten();
-    REQUIRE(object->Contains("key2"));
-    REQUIRE(object->Get("key2")->Is(Type::OBJECT));
-    CHECK(object->Get("key2")->Serialize(1, true) == key2);
+    SUBCASE("ignoreDuplicate = false") {
+        auto key1 = root->Get("key1");
+        REQUIRE(key1 != nullptr);
+        auto flatkey1 = key1->Flatten(false);
 
-    object->Get("key2")->Get("1.1.3")->Flatten();
-    REQUIRE(object->Get("key2")->Contains("1.1.3"));
-    REQUIRE(object->Get("key2")->Get("1.1.3")->Is(Type::OBJECT));
-    CHECK(object->Get("key2")->Get("1.1.3")->Serialize(0, true, true) == "culture = breton\nculture = french\nculture = roman\n religion = catholic\nreligion = hellenic\nreligion = pagan\n");
+        auto key2 = root->Get("key2");
+        REQUIRE(key2 != nullptr);
+        auto flatkey2 = key2->Flatten(false);
+        
+        // Key 1 shouldn't change when flattening it.
+        REQUIRE(flatkey1->Contains("1.1.1"));
+        REQUIRE(flatkey1->Contains("1.1.2"));
+        CHECK(flatkey1->Serialize() == key1->Serialize());
+        CHECK(flatkey1->Get("1.1.1")->Is(Type::ARRAY));
+        CHECK(flatkey1->Get("1.1.1")->Serialize() == key1->Get("1.1.1")->Serialize());
+        CHECK(flatkey1->Get("1.1.2")->Serialize() == key1->Get("1.1.2")->Serialize());
+
+        // Key 2 should merge keys '1.1.3' and '1.1.4' into the same object.
+        // with '1.1.3' being an array of all the original entries.
+        REQUIRE(flatkey2->Is(Type::OBJECT));
+        REQUIRE(flatkey2->Contains("1.1.3"));
+        REQUIRE(flatkey2->Contains("1.1.4"));
+        CHECK(flatkey2->Get("1.1.3")->Is(Type::ARRAY));
+        CHECK(flatkey2->Get("1.1.4")->Is(Type::OBJECT));
+
+        std::string expected111 =
+            "{ \n"
+            "{ culture = breton religion = catholic }\n"
+            "{ culture = french }\n"
+            "}";
+        std::string expected112 = "culture = breton religion = catholic";
+        
+        std::string expected113 =
+            "{ \n"
+            "{ culture = breton religion = catholic }\n"
+            "{ religion = hellenic }\n"
+            "{ culture = french }\n"
+            "{ culture = roman religion = pagan }\n"
+            "}";
+        std::string expected114 = "culture = norse religion = insular";
+
+        CHECK(flatkey1->Get("1.1.1")->Serialize(0, true, true) == expected111);
+        CHECK(flatkey1->Get("1.1.2")->Serialize(0, true, true) == expected112);
+        CHECK(flatkey2->Get("1.1.3")->Serialize(0, true, true) == expected113);
+        CHECK(flatkey2->Get("1.1.4")->Serialize(0, true, true) == expected114);
+    }
+
+    SUBCASE("ignoreDuplicate = true") {
+        auto key1 = root->Get("key1");
+        REQUIRE(key1 != nullptr);
+        auto flatkey1 = key1->Flatten(true);
+        auto flatkey111 = flatkey1->Get("1.1.1")->Flatten(true);
+        
+        auto key2 = root->Get("key2");
+        REQUIRE(key2 != nullptr);
+        auto flatkey2 = key2->Flatten(true);
+        auto flatkey113 = flatkey2->Get("1.1.3")->Flatten(true);
+
+        // Key 1 shouldn't change when flattening it.
+        REQUIRE(flatkey1->Contains("1.1.1"));
+        REQUIRE(flatkey1->Contains("1.1.2"));
+        CHECK(flatkey1->Serialize() == key1->Serialize());
+        CHECK(flatkey1->Get("1.1.1")->Is(Type::ARRAY));
+        CHECK(flatkey1->Get("1.1.1")->Serialize() == key1->Get("1.1.1")->Serialize());
+        CHECK(flatkey1->Get("1.1.2")->Serialize() == key1->Get("1.1.2")->Serialize());
+
+        // Key 2 should merge keys '1.1.3' and '1.1.4' into the same object.
+        // but only keep the original entry for '1.1.3'.
+        REQUIRE(flatkey2->Is(Type::OBJECT));
+        REQUIRE(flatkey2->Contains("1.1.3"));
+        REQUIRE(flatkey2->Contains("1.1.4"));
+        CHECK(flatkey2->Get("1.1.3")->Is(Type::ARRAY));
+        CHECK(flatkey2->Get("1.1.4")->Is(Type::OBJECT));
+
+        std::string expected111 =
+            "{ \n"
+            "{ culture = breton religion = catholic }\n"
+            "{ culture = french }\n"
+            "}";
+        std::string expected111_2 = "culture = breton religion = catholic";
+        std::string expected112 = "culture = breton religion = catholic";
+        
+        std::string expected113 =
+            "{ \n"
+            "{ culture = breton religion = catholic }\n"
+            "{ religion = hellenic }\n"
+            "{ culture = french }\n"
+            "}";
+        std::string expected114 = "culture = norse religion = insular";
+        std::string expected113_2 = "culture = breton religion = catholic";
+
+        CHECK(flatkey1->Get("1.1.1")->Serialize(0, true, true) == expected111);
+        CHECK(flatkey111->Serialize(0, true, true) == expected111_2);
+        CHECK(flatkey1->Get("1.1.2")->Serialize(0, true, true) == expected112);
+        CHECK(flatkey2->Get("1.1.3")->Serialize(0, true, true) == expected113);
+        CHECK(flatkey113->Serialize(0, true, true) == expected113_2);
+        CHECK(flatkey2->Get("1.1.4")->Serialize(0, true, true) == expected114);
+    }
 }

@@ -144,6 +144,8 @@ namespace Jomini {
             // Constructors
             ObjectMap();
             ObjectMap(const std::unordered_map<std::string, Value>& entries);
+            ObjectMap(const ObjectMap& other);
+            ObjectMap& operator=(ObjectMap other);
 
             // Modifiers
             void insert(const std::string& key, const Value& value);
@@ -241,7 +243,37 @@ namespace Jomini {
             template <typename T> void MergeUnsafe(std::string_view key, T value, Operator op = Operator::EQUAL);
 
 
-            void Flatten(); // Flatten an array of objects into a single object containing the pairs of both.
+            /**
+             * @brief Merges an array of objects into a single object by combining their key-value pairs.
+             * @param ignoreDuplicate If true, only the first occurrence of a key is kept.
+             * If false, multiple entries with the same key are preserved as a list.
+             * @return A shared pointer to a new, deep-copied Object containing the data.
+             * @details
+             * If the object isn't an array, then it directly returns a deep-copy.
+             * Otherwise, it iterates through the elements of the current array and
+             * collapses them based on the following strategy.
+             * 
+             * - Example Input:
+             * ```
+             * a = { b = { c = 0 } d = {} }
+             * a = { b = { c = 1 d = 1 } }
+             * ```
+             * - If `ignoreDuplicate = true`:
+             * ```
+             * a = { b = { c = 0 } d = {} }
+             * ```
+             * - If `ignoreDuplicate = false`:
+             * ```
+             * a = {
+             *  b = { 
+             *   { c = 0 } 
+             *   { c = 1 d = 1 } 
+             *  }
+             *  d = {}
+             * }
+             * ```
+             */
+            std::shared_ptr<Object> Flatten(bool ignoreDuplicate) const;
 
             std::string& GetString();
             ObjectMap& GetMap();

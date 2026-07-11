@@ -17,6 +17,7 @@
 #include <ranges>
 #include <cmath>
 #include <algorithm>
+#include <climits>
 
 namespace Jomini {
 
